@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multi-Model Chat (Stunning Dark/Light)</title>
+  <title>Multi-Model Chat (World-Class Edition)</title>
 
   <!-- Minimal PWA-ish (optional) -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -148,6 +148,40 @@
       height: auto;
       cursor: pointer;
     }
+
+    /* -----------------------------------
+       Collapsible Sections
+    ----------------------------------- */
+    .collapsible {
+      background: none;
+      border: none;
+      width: 100%;
+      text-align: left;
+      padding: 0.5rem 0;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: var(--text-primary);
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .collapsible i {
+      transition: transform 0.3s;
+    }
+    .collapsible.open i {
+      transform: rotate(180deg);
+    }
+    .content {
+      display: none;
+      margin-left: 0.5rem;
+      margin-top: 0.25rem;
+    }
+    .content.show {
+      display: block;
+    }
+
     .sidebar label {
       display: block;
       margin-top: 1rem;
@@ -162,16 +196,21 @@
     .sidebar .api-key-section input {
       flex: 1;
     }
-    .sidebar .api-key-section a {
+    .sidebar .api-key-section button {
+      padding: 0.3rem 0.6rem;
+    }
+    .sidebar a.get-key {
       font-size: 0.8rem;
       text-decoration: none;
       color: var(--text-primary);
       opacity: 0.7;
-      margin-left: 0.5rem;
+      margin-top: -0.5rem;
+      display: inline-block;
     }
-    .sidebar .api-key-section a:hover {
+    .sidebar a.get-key:hover {
       opacity: 1;
     }
+
     .sidebar input,
     .sidebar select {
       width: 100%;
@@ -212,6 +251,54 @@
     #apiKeyStatus {
       color: var(--accent);
       margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    /* -----------------------------------
+       Chat Sessions
+    ----------------------------------- */
+    .chat-sessions-container {
+      margin-top: 1rem;
+    }
+    .chat-sessions-container .chat-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .chat-sessions-container li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-primary);
+      margin-bottom: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .chat-sessions-container li:hover {
+      background: var(--border);
+    }
+    .chat-sessions-container li .del-btn {
+      background: none;
+      border: none;
+      color: var(--error);
+      font-size: 0.9rem;
+      cursor: pointer;
+      margin-left: 0.5rem;
+    }
+    .new-chat-btn {
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 1rem;
+      width: 100%;
+      text-align: center;
+    }
+    .new-chat-btn:hover {
+      background: var(--accent-hover);
     }
 
     /* -----------------------------------
@@ -234,6 +321,9 @@
       border-radius: 8px;
       position: relative;
       animation: fadeInUp 0.4s ease-in-out;
+      white-space: pre-wrap; /* allow multiline */
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.4;
     }
     @keyframes fadeInUp {
       from {
@@ -330,6 +420,23 @@
       background: var(--accent-hover);
     }
 
+    /* -----------------------------------
+       Footer (below input)
+    ----------------------------------- */
+    .footer {
+      text-align: center;
+      font-size: 0.85rem;
+      padding: 0.5rem;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px dashed var(--accent);
+    }
+
     /* Toast notification */
     .toast {
       position: fixed;
@@ -387,67 +494,79 @@
         </a>
       </div>
 
-      <!-- Gemini API Key -->
-      <label for="geminiApiKeyInput">Gemini API Key:</label>
-      <div class="api-key-section">
-        <input type="password" id="geminiApiKeyInput" />
-        <button onclick="toggleVisibility('geminiApiKeyInput')">Show</button>
+      <!-- Collapsible: APIs -->
+      <button class="collapsible" id="apisToggle" onclick="toggleCollapsible('apisToggle', 'apisContent')">
+        APIs 
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="content" id="apisContent">
+        <!-- Gemini API Key -->
+        <label for="geminiApiKeyInput">Gemini API Key:</label>
+        <div class="api-key-section">
+          <input type="password" id="geminiApiKeyInput" />
+          <button onclick="toggleVisibility('geminiApiKeyInput')">Show</button>
+        </div>
+        <a class="get-key" href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank">Get API Key</a>
+
+        <!-- OpenAI API Key -->
+        <label for="openAiApiKeyInput">OpenAI API Key:</label>
+        <div class="api-key-section">
+          <input type="password" id="openAiApiKeyInput" />
+          <button onclick="toggleVisibility('openAiApiKeyInput')">Show</button>
+        </div>
+        <a class="get-key" href="https://platform.openai.com" target="_blank">Get API Key</a>
+
+        <!-- Grok API Key -->
+        <label for="grokApiKeyInput">Grok API Key:</label>
+        <div class="api-key-section">
+          <input type="password" id="grokApiKeyInput" />
+          <button onclick="toggleVisibility('grokApiKeyInput')">Show</button>
+        </div>
+        <a class="get-key" href="https://docs.x.ai/docs/overview" target="_blank">Get API Key</a>
       </div>
-      <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank">Get API Key</a>
 
-      <!-- OpenAI API Key -->
-      <label for="openAiApiKeyInput">OpenAI API Key:</label>
-      <div class="api-key-section">
-        <input type="password" id="openAiApiKeyInput" />
-        <button onclick="toggleVisibility('openAiApiKeyInput')">Show</button>
-      </div>
-      <a href="https://platform.openai.com" target="_blank">Get API Key</a>
+      <!-- Collapsible: Models -->
+      <button class="collapsible" id="modelsToggle" onclick="toggleCollapsible('modelsToggle', 'modelsContent')">
+        Models 
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="content" id="modelsContent">
+        <h3>Select Models</h3>
+        <label for="geminiModel">Gemini:</label>
+        <select id="geminiModel">
+          <option value="none">None</option>
+          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+          <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
+        </select>
 
-      <!-- Grok API Key -->
-      <label for="grokApiKeyInput">Grok API Key:</label>
-      <div class="api-key-section">
-        <input type="password" id="grokApiKeyInput" />
-        <button onclick="toggleVisibility('grokApiKeyInput')">Show</button>
-      </div>
-      <a href="https://docs.x.ai/docs/overview" target="_blank">Get API Key</a>
+        <label for="openAiModel">OpenAI:</label>
+        <select id="openAiModel">
+          <option value="none">None</option>
+          <!-- As requested: ALIAS -> real model -->
+          <option value="gpt-4o">gpt-4o (maps to gpt-4o-2024-08-06)</option>
+          <option value="chatgpt-4o-latest">chatgpt-4o-latest (continuously updated)</option>
+          <option value="gpt-4o-mini">gpt-4o-mini (maps to gpt-4o-mini-2024-07-18)</option>
+          <option value="o1">o1 (maps to o1-2024-12-17)</option>
+          <option value="o1-mini">o1-mini (maps to o1-mini-2024-09-12)</option>
+          <option value="o1-preview">o1-preview (maps to o1-preview-2024-09-12)</option>
+        </select>
 
-      <hr />
-
-      <!-- Model Selections -->
-      <h3>Select Models</h3>
-
-      <label for="geminiModel">Gemini:</label>
-      <select id="geminiModel">
-        <option value="none">None</option>
-        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-        <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
-      </select>
-
-      <label for="openAiModel">OpenAI:</label>
-      <select id="openAiModel">
-        <option value="none">None</option>
-        <option value="gpt-4o">GPT-4o</option>
-        <option value="gpt-4o-mini">GPT-4o-mini</option>
-        <option value="o1">o1</option>
-        <option value="o1-mini">o1-mini</option>
-        <option value="o1-preview">o1-preview</option>
-      </select>
-
-      <label for="grokModel">Grok:</label>
-      <select id="grokModel">
-        <option value="none">None</option>
-        <option value="grok-beta">grok-beta</option>
-      </select>
-
-      <hr />
-      <!-- Dark Mode Toggle -->
-      <div class="theme-toggle">
-        <label for="themeSwitch" style="margin:0;">Dark Mode</label>
-        <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" />
+        <label for="grokModel">Grok:</label>
+        <select id="grokModel">
+          <option value="none">None</option>
+          <option value="grok-beta">grok-beta</option>
+        </select>
       </div>
 
       <button class="save-btn" onclick="saveSettings()">Save</button>
       <p id="apiKeyStatus"></p>
+
+      <!-- Chat Sessions -->
+      <div class="chat-sessions-container">
+        <h3>Chats</h3>
+        <ul class="chat-list" id="chatList"></ul>
+        <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
+      </div>
 
       <div class="sidebar-footer">
         Brought to you FREE from<br />
@@ -470,8 +589,16 @@
           onkeydown="handleKeyPress(event)"
           oninput="autoGrow(this)"
         ></textarea>
-        <button type="submit" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+        <button type="submit" class="send-btn">
+          <i class="fas fa-paper-plane"></i>
+        </button>
       </form>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      Brought to you by 
+      <a href="https://www.ChatbotBuilder.ai" target="_blank">Chatbot Builder AI</a>
     </div>
   </div>
 
@@ -494,15 +621,29 @@
     let selectedOpenAiModel = "none";
     let selectedGrokModel = "none";
 
+    // Known OpenAI model name mappings
+    const openAiModelMap = {
+      "gpt-4o": "gpt-4o-2024-08-06",
+      "gpt-4o-mini": "gpt-4o-mini-2024-07-18",
+      "o1": "o1-2024-12-17",
+      "o1-mini": "o1-mini-2024-09-12",
+      "o1-preview": "o1-preview-2024-09-12",
+      "chatgpt-4o-latest": "chatgpt-4o-latest" // “Continuously updated”
+    };
+
+    // Multiple Chats
+    let chats = []; // Array of { id, name, messages: [{role, text, vendor, timestamp}] }
+    let currentChatId = null;
+
     // THEME
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     window.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("themeSwitch").checked = (savedTheme === "dark");
+      document.getElementById("themeSwitch")?.checked === (savedTheme === "dark");
     });
 
     /* -----------------------------------
-       On Load: Restore from localStorage
+       On Load
     ----------------------------------- */
     window.onload = function() {
       // Load keys
@@ -522,22 +663,32 @@
       document.getElementById("geminiModel").value = selectedGeminiModel;
       document.getElementById("openAiModel").value = selectedOpenAiModel;
       document.getElementById("grokModel").value = selectedGrokModel;
+
+      // Load chat sessions
+      loadChatsFromStorage();
     };
 
     /* -----------------------------------
-       Toggle Sidebar
+       Sidebar
     ----------------------------------- */
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       sidebar.classList.toggle("open");
     }
 
+    function toggleCollapsible(toggleId, contentId) {
+      const toggleBtn = document.getElementById(toggleId);
+      const contentEl = document.getElementById(contentId);
+
+      toggleBtn.classList.toggle("open");
+      contentEl.classList.toggle("show");
+    }
+
     /* -----------------------------------
-       Theme Toggle
+       Theme Toggle (if you decide to add a checkbox)
     ----------------------------------- */
     function toggleTheme() {
-      const isDark = document.getElementById("themeSwitch").checked;
-      const theme = isDark ? "dark" : "light";
+      const theme = (document.documentElement.getAttribute("data-theme") === "dark") ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", theme);
       localStorage.setItem("theme", theme);
     }
@@ -581,6 +732,112 @@
     }
 
     /* -----------------------------------
+       Chat Sessions Management
+    ----------------------------------- */
+    function loadChatsFromStorage() {
+      const storedChats = localStorage.getItem("multiModelChats");
+      chats = storedChats ? JSON.parse(storedChats) : [];
+
+      // If no chats exist, create one by default
+      if (chats.length === 0) {
+        createNewChat();
+      } else {
+        // Always ensure currentChatId is valid
+        if (!currentChatId) {
+          currentChatId = chats[0].id;
+        }
+      }
+      renderChatList();
+      renderChatMessages(currentChatId);
+    }
+
+    function saveChatsToStorage() {
+      localStorage.setItem("multiModelChats", JSON.stringify(chats));
+    }
+
+    function createNewChat() {
+      const newId = Date.now(); // quick unique ID
+      const newChat = {
+        id: newId,
+        name: `Chat #${chats.length + 1}`,
+        messages: []
+      };
+      chats.unshift(newChat); // add to front
+      currentChatId = newId;
+      saveChatsToStorage();
+      renderChatList();
+      renderChatMessages(currentChatId);
+    }
+
+    function switchChat(chatId) {
+      currentChatId = chatId;
+      renderChatMessages(chatId);
+      toggleSidebar(); // optional: close sidebar when switching
+    }
+
+    function deleteChat(chatId, e) {
+      e.stopPropagation(); // don’t switch chat
+      const idx = chats.findIndex(c => c.id === chatId);
+      if (idx > -1) {
+        chats.splice(idx, 1);
+        saveChatsToStorage();
+        // If we deleted the current chat, switch to the first available
+        if (chatId === currentChatId) {
+          currentChatId = chats.length > 0 ? chats[0].id : null;
+        }
+        renderChatList();
+        if (currentChatId) {
+          renderChatMessages(currentChatId);
+        } else {
+          // No chats left
+          createNewChat();
+        }
+      }
+    }
+
+    function renderChatList() {
+      const chatListEl = document.getElementById("chatList");
+      chatListEl.innerHTML = "";
+      chats.forEach(chat => {
+        const li = document.createElement("li");
+        li.onclick = () => switchChat(chat.id);
+        li.textContent = chat.name;
+
+        // Delete button
+        const delBtn = document.createElement("button");
+        delBtn.classList.add("del-btn");
+        delBtn.textContent = "✕";
+        delBtn.onclick = (e) => deleteChat(chat.id, e);
+
+        li.appendChild(delBtn);
+        chatListEl.appendChild(li);
+      });
+    }
+
+    function renderChatMessages(chatId) {
+      const chatArea = document.getElementById("chatArea");
+      chatArea.innerHTML = "";
+
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+
+      chat.messages.forEach((msgObj) => {
+        addMessageToDOM(
+          msgObj.text,
+          msgObj.role,
+          msgObj.vendor,
+          msgObj.timestamp,
+          false // do not animate on reload
+        );
+      });
+
+      // Scroll to bottom
+      setTimeout(() => {
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }, 100);
+    }
+
+    /* -----------------------------------
        Input + Chat Handling
     ----------------------------------- */
     function handleSubmit(event) {
@@ -607,33 +864,55 @@
       const userMessage = input.value.trim();
       if (!userMessage) return;
 
-      // Display user message
-      addMessageToDOM(userMessage, "user", "");
+      // Add user message to current chat
+      addChatMessage(currentChatId, {
+        role: "user",
+        text: userMessage,
+        vendor: "",
+        timestamp: new Date().toLocaleString()
+      });
+      addMessageToDOM(userMessage, "user", "", new Date().toLocaleString(), false);
 
       // Clear input
       input.value = "";
       autoGrow(input);
 
-      // Gemini
+      // Fire off requests to any enabled vendors
       if (geminiApiKey && selectedGeminiModel !== "none") {
         sendGeminiRequest(userMessage, selectedGeminiModel);
       }
 
-      // OpenAI
       if (openAiApiKey && selectedOpenAiModel !== "none") {
-        sendOpenAiRequest(userMessage, selectedOpenAiModel);
+        const mappedModel = openAiModelMap[selectedOpenAiModel] || selectedOpenAiModel;
+        sendOpenAiRequest(userMessage, mappedModel);
       }
 
-      // Grok
       if (grokApiKey && selectedGrokModel !== "none") {
         sendGrokRequest(userMessage, selectedGrokModel);
       }
     }
 
+    // Add to chat in memory, then persist
+    function addChatMessage(chatId, messageObj) {
+      const chat = chats.find(c => c.id === chatId);
+      if (!chat) return;
+      chat.messages.push(messageObj);
+      saveChatsToStorage();
+    }
+
     /* -----------------------------------
-       DOM: Add Messages (timestamp below)
+       DOM: Add Messages
+       - role = "user" or "assistant"
+       - vendorClass = "gemini", "openai", "grok" or ""
+       - animate = whether to type out
     ----------------------------------- */
-    function addMessageToDOM(text, role, vendorClass) {
+    function addMessageToDOM(
+      text,
+      role,
+      vendorClass,
+      timestamp,
+      animate = true
+    ) {
       const chatArea = document.getElementById("chatArea");
 
       const container = document.createElement("div");
@@ -650,37 +929,53 @@
           msgDiv.classList.add(vendorClass + "Response");
         }
       }
-      msgDiv.textContent = text;
+
+      // If assistant and animate
+      if (role === "assistant" && animate) {
+        typeText(msgDiv, text);
+      } else {
+        msgDiv.textContent = text;
+      }
+
       container.appendChild(msgDiv);
 
-      // If assistant, add timestamp and copy icon below
+      // Timestamp + Copy Icon
+      const meta = document.createElement("div");
+      meta.classList.add("assistant-meta");
+      const timeSpan = document.createElement("span");
       if (role === "assistant") {
-        const meta = document.createElement("div");
-        meta.classList.add("assistant-meta");
-        // Timestamp
-        const timestamp = new Date().toLocaleString();
-        const timeSpan = document.createElement("span");
-        timeSpan.textContent = `Assistant - ${timestamp}`;
-        meta.appendChild(timeSpan);
+        const vendorLabel = vendorClass
+          ? vendorClass.charAt(0).toUpperCase() + vendorClass.slice(1)
+          : "Assistant";
+        timeSpan.textContent = `[${vendorLabel}] - ${timestamp}`;
+      } else {
+        timeSpan.textContent = `User - ${timestamp}`;
+      }
+      meta.appendChild(timeSpan);
 
-        // Copy icon
+      // Copy icon for assistant only
+      if (role === "assistant") {
         const copyBtn = document.createElement("button");
         copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
         copyBtn.onclick = () => copyToClipboard(text);
         meta.appendChild(copyBtn);
-
-        container.appendChild(meta);
-      } else {
-        // For user, also show timestamp below
-        const meta = document.createElement("div");
-        meta.classList.add("assistant-meta"); // same style, just reusing
-        const timestamp = new Date().toLocaleString();
-        meta.textContent = `User - ${timestamp}`;
-        container.appendChild(meta);
       }
 
+      container.appendChild(meta);
       chatArea.appendChild(container);
       container.scrollIntoView({ behavior: "smooth" });
+    }
+
+    // Typing effect for assistant messages
+    function typeText(element, text, speed = 30) {
+      let idx = 0;
+      const intervalId = setInterval(() => {
+        element.textContent += text.charAt(idx);
+        idx++;
+        if (idx >= text.length) {
+          clearInterval(intervalId);
+        }
+      }, speed);
     }
 
     /* -----------------------------------
@@ -702,29 +997,60 @@
     ----------------------------------- */
     // 1) Gemini
     function sendGeminiRequest(userInput, model) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+      // NOTE: This is a placeholder endpoint—replace with actual for real usage.
+      // Hypothetical endpoint & payload for demonstration:
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateText?key=${geminiApiKey}`;
       fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [
-            { parts: [{ text: userInput }] }
-          ]
+          prompt: {
+            text: userInput
+          }
         }),
       })
       .then((response) => response.json())
       .then((data) => {
-        const modelPrefix = `[Gemini - ${model}] `;
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-        addMessageToDOM(modelPrefix + text, "assistant", "gemini");
+        const text = data?.candidates?.[0]?.output || "No response";
+        const finalText = `[Gemini - ${model}] ${text}`;
+        // Add to DOM with typed animation
+        const newMsgObj = {
+          role: "assistant",
+          text: finalText,
+          vendor: "gemini",
+          timestamp: new Date().toLocaleString()
+        };
+        addChatMessage(currentChatId, newMsgObj);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "gemini",
+          newMsgObj.timestamp,
+          true
+        );
       })
       .catch((err) => {
-        addMessageToDOM(`[Gemini - ${model}] Error: ${err.message}`, "assistant", "gemini");
+        const finalText = `[Gemini - ${model}] Error: ${err.message}`;
+        const newMsgObj = {
+          role: "assistant",
+          text: finalText,
+          vendor: "gemini",
+          timestamp: new Date().toLocaleString()
+        };
+        addChatMessage(currentChatId, newMsgObj);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "gemini",
+          newMsgObj.timestamp,
+          false
+        );
       });
     }
 
     // 2) OpenAI
     function sendOpenAiRequest(userInput, model) {
+      // Hypothetical endpoint usage
       const url = "https://api.openai.com/v1/chat/completions";
       fetch(url, {
         method: "POST",
@@ -733,24 +1059,53 @@
           "Authorization": `Bearer ${openAiApiKey}`,
         },
         body: JSON.stringify({
-          model: model, 
+          model: model,
           messages: [{ role: "user", content: userInput }],
           temperature: 0.7,
         }),
       })
       .then((response) => response.json())
       .then((data) => {
-        const modelPrefix = `[OpenAI - ${model}] `;
-        const text = data.choices?.[0]?.message?.content || "No response";
-        addMessageToDOM(modelPrefix + text, "assistant", "openai");
+        const text = data?.choices?.[0]?.message?.content || "No response";
+        const finalText = `[OpenAI - ${model}] ${text}`;
+        // Add to DOM with typed animation
+        const newMsgObj = {
+          role: "assistant",
+          text: finalText,
+          vendor: "openai",
+          timestamp: new Date().toLocaleString()
+        };
+        addChatMessage(currentChatId, newMsgObj);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "openai",
+          newMsgObj.timestamp,
+          true
+        );
       })
       .catch((err) => {
-        addMessageToDOM(`[OpenAI - ${model}] Error: ${err.message}`, "assistant", "openai");
+        const finalText = `[OpenAI - ${model}] Error: ${err.message}`;
+        const newMsgObj = {
+          role: "assistant",
+          text: finalText,
+          vendor: "openai",
+          timestamp: new Date().toLocaleString()
+        };
+        addChatMessage(currentChatId, newMsgObj);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "openai",
+          newMsgObj.timestamp,
+          false
+        );
       });
     }
 
     // 3) Grok
     function sendGrokRequest(userInput, model) {
+      // Hypothetical endpoint usage
       const url = "https://api.x.ai/v1/chat/completions";
       fetch(url, {
         method: "POST",
@@ -766,12 +1121,40 @@
       })
       .then((response) => response.json())
       .then((data) => {
-        const modelPrefix = `[Grok - ${model}] `;
-        const text = data.choices?.[0]?.message?.content || "No response";
-        addMessageToDOM(modelPrefix + text, "assistant", "grok");
+        const text = data?.choices?.[0]?.message?.content || "No response";
+        const finalText = `[Grok - ${model}] ${text}`;
+        // Add to DOM with typed animation
+        const newMsgObj = {
+          role: "assistant",
+          text: finalText,
+          vendor: "grok",
+          timestamp: new Date().toLocaleString()
+        };
+        addChatMessage(currentChatId, newMsgObj);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "grok",
+          newMsgObj.timestamp,
+          true
+        );
       })
       .catch((err) => {
-        addMessageToDOM(`[Grok - ${model}] Error: ${err.message}`, "assistant", "grok");
+        const finalText = `[Grok - ${model}] Error: ${err.message}`;
+        const newMsgObj = {
+          role: "assistant",
+          text: finalText,
+          vendor: "grok",
+          timestamp: new Date().toLocaleString()
+        };
+        addChatMessage(currentChatId, newMsgObj);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "grok",
+          newMsgObj.timestamp,
+          false
+        );
       });
     }
   </script>
