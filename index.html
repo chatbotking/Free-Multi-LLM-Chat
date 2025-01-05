@@ -460,6 +460,54 @@
         transform: translateX(0);
       }
     }
+
+    /* -----------------------------------
+       Nicer Toggle Switch for Dark Mode
+    ----------------------------------- */
+    .theme-switch-container {
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      justify-content: center; /* center horizontally */
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 24px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+    input:checked + .slider:before {
+      transform: translateX(22px);
+    }
   </style>
 </head>
 <body>
@@ -551,9 +599,6 @@
           <option value="gpt-4o">gpt-4o (maps to gpt-4o-2024-08-06)</option>
           <option value="chatgpt-4o-latest">chatgpt-4o-latest (continuously updated)</option>
           <option value="gpt-4o-mini">gpt-4o-mini (maps to gpt-4o-mini-2024-07-18)</option>
-          <option value="o1">o1 (maps to o1-2024-12-17)</option>
-          <option value="o1-mini">o1-mini (maps to o1-mini-2024-09-12)</option>
-          <option value="o1-preview">o1-preview (maps to o1-preview-2024-09-12)</option>
         </select>
 
         <label for="grokModel">Grok:</label>
@@ -565,11 +610,14 @@
 
       <hr style="margin-top: 1rem; margin-bottom: 1rem;"/>
 
-      <!-- Dark Mode Toggle -->
-      <label style="display: flex; align-items: center; gap: 0.5rem;">
-        <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="transform: scale(1.3);" />
-        Dark Mode
-      </label>
+      <!-- Dark Mode Toggle (Nicer Switch) -->
+      <div class="theme-switch-container">
+        <span>Dark Mode</span>
+        <label class="switch">
+          <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" />
+          <span class="slider"></span>
+        </label>
+      </div>
 
       <button class="save-btn" onclick="saveSettings()">Save</button>
       <p id="apiKeyStatus"></p>
@@ -638,10 +686,7 @@
     const openAiModelMap = {
       "gpt-4o": "gpt-4o-2024-08-06",
       "gpt-4o-mini": "gpt-4o-mini-2024-07-18",
-      "o1": "o1-2024-12-17",
-      "o1-mini": "o1-mini-2024-09-12",
-      "o1-preview": "o1-preview-2024-09-12",
-      "chatgpt-4o-latest": "chatgpt-4o-latest" // continuously updated
+      "chatgpt-4o-latest": "chatgpt-4o-latest"
     };
 
     // Multiple Chats
@@ -924,7 +969,7 @@
        - role = "user" or "assistant"
        - vendorClass = "gemini", "openai", "grok" or ""
        - animate = whether to type out
-       - modelUsed = e.g. "o1-2024-12-17"
+       - modelUsed = e.g. "gpt-4o-2024-08-06"
     ----------------------------------- */
     function addMessageToDOM(
       text,
@@ -944,17 +989,24 @@
       msgDiv.classList.add("message");
       if (role === "user") {
         msgDiv.classList.add("user-message");
+        msgDiv.textContent = text;
       } else {
         msgDiv.classList.add("assistant-message");
         if (vendorClass) {
           msgDiv.classList.add(vendorClass + "Response");
         }
-      }
 
-      if (role === "assistant" && animate) {
-        typeText(msgDiv, text);
-      } else {
-        msgDiv.textContent = text;
+        // Format: "Vendor: text"
+        const vendorDisplayName = vendorClass
+          ? vendorClass.charAt(0).toUpperCase() + vendorClass.slice(1)
+          : "Assistant";
+        const combinedText = `${vendorDisplayName}: ${text}`;
+
+        if (animate) {
+          typeText(msgDiv, combinedText);
+        } else {
+          msgDiv.textContent = combinedText;
+        }
       }
 
       container.appendChild(msgDiv);
@@ -963,20 +1015,17 @@
       const meta = document.createElement("div");
       meta.classList.add("assistant-meta");
 
-      const vendorLabel = (vendorClass)
-        ? vendorClass.charAt(0).toUpperCase() + vendorClass.slice(1)
-        : "Assistant";
-
-      // If we have a modelUsed, show it next to vendor
-      let vendorDisplay = `[${vendorLabel}`;
-      if (modelUsed) {
-        vendorDisplay += ` - ${modelUsed}`;
-      }
-      vendorDisplay += `] - ${timestamp}`;
-
       if (role === "assistant") {
+        let metaLine = "";
+        // If we have a modelUsed, show it next to the timestamp
+        if (modelUsed) {
+          metaLine = `[${modelUsed}] - ${timestamp}`;
+        } else {
+          metaLine = `[${timestamp}]`;
+        }
+
         const timeSpan = document.createElement("span");
-        timeSpan.textContent = vendorDisplay;
+        timeSpan.textContent = metaLine;
         meta.appendChild(timeSpan);
 
         // Copy icon
@@ -998,6 +1047,7 @@
     // Typing effect for assistant messages (faster now)
     function typeText(element, text, speed = 10) {
       let idx = 0;
+      element.textContent = ""; // ensure empty before starting
       const intervalId = setInterval(() => {
         element.textContent += text.charAt(idx);
         idx++;
@@ -1044,18 +1094,17 @@
         const text = data?.contents?.[0]?.parts?.[0]?.text
           || data?.candidates?.[0]?.content?.parts?.[0]?.text
           || "No response";
-        const finalText = `[Gemini - ${model}] ${text}`;
-
+        // Format "Gemini: text"
         const newMsgObj = {
           role: "assistant",
-          text: finalText,
+          text,
           vendor: "gemini",
           timestamp: new Date().toLocaleString(),
           modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
-          finalText,
+          newMsgObj.text,
           "assistant",
           "gemini",
           newMsgObj.timestamp,
@@ -1064,17 +1113,17 @@
         );
       })
       .catch((err) => {
-        const finalText = `[Gemini - ${model}] Error: ${err.message}`;
+        const errMsg = `Error: ${err.message}`;
         const newMsgObj = {
           role: "assistant",
-          text: finalText,
+          text: errMsg,
           vendor: "gemini",
           timestamp: new Date().toLocaleString(),
           modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
-          finalText,
+          newMsgObj.text,
           "assistant",
           "gemini",
           newMsgObj.timestamp,
@@ -1105,17 +1154,17 @@
       .then((response) => response.json())
       .then((data) => {
         const text = data?.choices?.[0]?.message?.content || "No response";
-        const finalText = `[OpenAI - ${model}] ${text}`;
+
         const newMsgObj = {
           role: "assistant",
-          text: finalText,
+          text,
           vendor: "openai",
           timestamp: new Date().toLocaleString(),
           modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
-          finalText,
+          newMsgObj.text,
           "assistant",
           "openai",
           newMsgObj.timestamp,
@@ -1124,17 +1173,17 @@
         );
       })
       .catch((err) => {
-        const finalText = `[OpenAI - ${model}] Error: ${err.message}`;
+        const errMsg = `Error: ${err.message}`;
         const newMsgObj = {
           role: "assistant",
-          text: finalText,
+          text: errMsg,
           vendor: "openai",
           timestamp: new Date().toLocaleString(),
           modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
-          finalText,
+          newMsgObj.text,
           "assistant",
           "openai",
           newMsgObj.timestamp,
@@ -1146,7 +1195,6 @@
 
     // 3) Grok
     function sendGrokRequest(userInput, model) {
-      // Hypothetical endpoint usage
       const url = "https://api.x.ai/v1/chat/completions";
       fetch(url, {
         method: "POST",
@@ -1163,17 +1211,17 @@
       .then((response) => response.json())
       .then((data) => {
         const text = data?.choices?.[0]?.message?.content || "No response";
-        const finalText = `[Grok - ${model}] ${text}`;
+
         const newMsgObj = {
           role: "assistant",
-          text: finalText,
+          text,
           vendor: "grok",
           timestamp: new Date().toLocaleString(),
           modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
-          finalText,
+          newMsgObj.text,
           "assistant",
           "grok",
           newMsgObj.timestamp,
@@ -1182,17 +1230,17 @@
         );
       })
       .catch((err) => {
-        const finalText = `[Grok - ${model}] Error: ${err.message}`;
+        const errMsg = `Error: ${err.message}`;
         const newMsgObj = {
           role: "assistant",
-          text: finalText,
+          text: errMsg,
           vendor: "grok",
           timestamp: new Date().toLocaleString(),
           modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
-          finalText,
+          newMsgObj.text,
           "assistant",
           "grok",
           newMsgObj.timestamp,
