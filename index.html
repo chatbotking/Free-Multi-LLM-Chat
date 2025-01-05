@@ -26,6 +26,7 @@
       --accent: #36D6B5; /* Brand color */
       --accent-hover: #2eb9a3;
       --error: #dc2626;
+      --dropdown-font-size: 1rem; /* Increase dropdown text size */
     }
     [data-theme="dark"] {
       --bg-primary: #1a1a1a;
@@ -220,6 +221,7 @@
       border: 1px solid var(--border);
       background: var(--bg-primary);
       color: var(--text-primary);
+      font-size: var(--dropdown-font-size);
     }
     .sidebar .save-btn {
       margin-top: 1rem;
@@ -561,6 +563,14 @@
         </select>
       </div>
 
+      <hr style="margin-top: 1rem; margin-bottom: 1rem;"/>
+
+      <!-- Dark Mode Toggle -->
+      <label style="display: flex; align-items: center; gap: 0.5rem;">
+        <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" style="transform: scale(1.3);" />
+        Dark Mode
+      </label>
+
       <button class="save-btn" onclick="saveSettings()">Save</button>
       <p id="apiKeyStatus"></p>
 
@@ -635,14 +645,18 @@
     };
 
     // Multiple Chats
-    let chats = []; // Array of { id, name, messages: [{role, text, vendor, timestamp}] }
+    let chats = []; // Array of { id, name, messages: [{role, text, vendor, timestamp, modelUsed}] }
     let currentChatId = null;
 
     // THEME
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     window.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("themeSwitch")?.checked === (savedTheme === "dark");
+      const isDark = (savedTheme === "dark");
+      const themeSwitch = document.getElementById("themeSwitch");
+      if (themeSwitch) {
+        themeSwitch.checked = isDark;
+      }
     });
 
     /* -----------------------------------
@@ -687,12 +701,13 @@
     }
 
     /* -----------------------------------
-       Theme Toggle (if you decide to add a checkbox)
+       Theme Toggle
     ----------------------------------- */
     function toggleTheme() {
-      const theme = (document.documentElement.getAttribute("data-theme") === "dark") ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", theme);
-      localStorage.setItem("theme", theme);
+      const currentTheme = document.documentElement.getAttribute("data-theme");
+      const newTheme = (currentTheme === "dark") ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
     }
 
     /* -----------------------------------
@@ -829,7 +844,8 @@
           msgObj.role,
           msgObj.vendor,
           msgObj.timestamp,
-          false // do not animate on reload
+          false, // do not animate on reload
+          msgObj.modelUsed
         );
       });
 
@@ -871,7 +887,8 @@
         role: "user",
         text: userMessage,
         vendor: "",
-        timestamp: new Date().toLocaleString()
+        timestamp: new Date().toLocaleString(),
+        modelUsed: ""
       });
       addMessageToDOM(userMessage, "user", "", new Date().toLocaleString(), false);
 
@@ -907,13 +924,15 @@
        - role = "user" or "assistant"
        - vendorClass = "gemini", "openai", "grok" or ""
        - animate = whether to type out
+       - modelUsed = e.g. "o1-2024-12-17"
     ----------------------------------- */
     function addMessageToDOM(
       text,
       role,
       vendorClass,
       timestamp,
-      animate = true
+      animate = true,
+      modelUsed = ""
     ) {
       const chatArea = document.getElementById("chatArea");
 
@@ -943,23 +962,32 @@
       // Timestamp + Copy Icon
       const meta = document.createElement("div");
       meta.classList.add("assistant-meta");
-      const timeSpan = document.createElement("span");
-      if (role === "assistant") {
-        const vendorLabel = vendorClass
-          ? vendorClass.charAt(0).toUpperCase() + vendorClass.slice(1)
-          : "Assistant";
-        timeSpan.textContent = `[${vendorLabel}] - ${timestamp}`;
-      } else {
-        timeSpan.textContent = `User - ${timestamp}`;
-      }
-      meta.appendChild(timeSpan);
 
-      // Copy icon for assistant only
+      const vendorLabel = (vendorClass)
+        ? vendorClass.charAt(0).toUpperCase() + vendorClass.slice(1)
+        : "Assistant";
+
+      // If we have a modelUsed, show it next to vendor
+      let vendorDisplay = `[${vendorLabel}`;
+      if (modelUsed) {
+        vendorDisplay += ` - ${modelUsed}`;
+      }
+      vendorDisplay += `] - ${timestamp}`;
+
       if (role === "assistant") {
+        const timeSpan = document.createElement("span");
+        timeSpan.textContent = vendorDisplay;
+        meta.appendChild(timeSpan);
+
+        // Copy icon
         const copyBtn = document.createElement("button");
         copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
         copyBtn.onclick = () => copyToClipboard(text);
         meta.appendChild(copyBtn);
+      } else {
+        const userTimeSpan = document.createElement("span");
+        userTimeSpan.textContent = `User - ${timestamp}`;
+        meta.appendChild(userTimeSpan);
       }
 
       container.appendChild(meta);
@@ -998,7 +1026,6 @@
     ----------------------------------- */
     // 1) Gemini
     function sendGeminiRequest(userInput, model) {
-      // Format: https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent?key=<api_key>
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
       fetch(url, {
         method: "POST",
@@ -1014,19 +1041,27 @@
       .then((response) => response.json())
       .then((data) => {
         // Attempt to read the first candidate
-        // Structure can vary, so adjust as your real API's response
         const text = data?.contents?.[0]?.parts?.[0]?.text
           || data?.candidates?.[0]?.content?.parts?.[0]?.text
           || "No response";
         const finalText = `[Gemini - ${model}] ${text}`;
+
         const newMsgObj = {
           role: "assistant",
           text: finalText,
           vendor: "gemini",
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(finalText, "assistant", "gemini", newMsgObj.timestamp, true);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "gemini",
+          newMsgObj.timestamp,
+          true,
+          model
+        );
       })
       .catch((err) => {
         const finalText = `[Gemini - ${model}] Error: ${err.message}`;
@@ -1034,16 +1069,23 @@
           role: "assistant",
           text: finalText,
           vendor: "gemini",
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(finalText, "assistant", "gemini", newMsgObj.timestamp, false);
+        addMessageToDOM(
+          finalText,
+          "assistant",
+          "gemini",
+          newMsgObj.timestamp,
+          false,
+          model
+        );
       });
     }
 
     // 2) OpenAI
     function sendOpenAiRequest(userInput, model) {
-      // Standard OpenAI v1 chat completions endpoint
       const url = "https://api.openai.com/v1/chat/completions";
       fetch(url, {
         method: "POST",
@@ -1068,7 +1110,8 @@
           role: "assistant",
           text: finalText,
           vendor: "openai",
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
@@ -1076,7 +1119,8 @@
           "assistant",
           "openai",
           newMsgObj.timestamp,
-          true
+          true,
+          model
         );
       })
       .catch((err) => {
@@ -1085,7 +1129,8 @@
           role: "assistant",
           text: finalText,
           vendor: "openai",
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
@@ -1093,7 +1138,8 @@
           "assistant",
           "openai",
           newMsgObj.timestamp,
-          false
+          false,
+          model
         );
       });
     }
@@ -1122,7 +1168,8 @@
           role: "assistant",
           text: finalText,
           vendor: "grok",
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
@@ -1130,7 +1177,8 @@
           "assistant",
           "grok",
           newMsgObj.timestamp,
-          true
+          true,
+          model
         );
       })
       .catch((err) => {
@@ -1139,7 +1187,8 @@
           role: "assistant",
           text: finalText,
           vendor: "grok",
-          timestamp: new Date().toLocaleString()
+          timestamp: new Date().toLocaleString(),
+          modelUsed: model
         };
         addChatMessage(currentChatId, newMsgObj);
         addMessageToDOM(
@@ -1147,7 +1196,8 @@
           "assistant",
           "grok",
           newMsgObj.timestamp,
-          false
+          false,
+          model
         );
       });
     }
