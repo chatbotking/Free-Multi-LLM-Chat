@@ -1,20 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Basic meta -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>OpenAI Realtime Chat</title>
+
+  <!-- Title & PWA Info -->
+  <title>Chat App</title>
+  <!-- iOS PWA meta -->
+  <meta name="apple-mobile-web-app-title" content="Chat App" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <!-- Add a basic apple-touch-icon (an emoji, though real usage typically requires a PNG) -->
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAACXZwQWcAAAAgAAAAIAEG2csiAAAAM0lEQVR4nGNgGAXDw7//HwYGBhZE9Ri7YyzKDHsGQZgNpuR2hLZKWeJUHEJLM1A1GCFCnIi4KRHwAAAABJRU5ErkJggg==" />
+  
+  <!-- Basic "manifest.json" for PWA (minimal) -->
+  <link rel="manifest" href="manifest.json" />
+
   <link
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     rel="stylesheet"
   />
+
   <style>
     :root {
       --bg-primary: #ffffff;
       --bg-secondary: #f5f5f5;
       --text-primary: #333333;
       --border: #e5e5e5;
-      /* Updated brand color and hover */
       --accent: #36D6B5;
       --accent-hover: #2eb9a3;
       --error: #dc2626;
@@ -33,8 +46,7 @@
     html,
     body {
       height: 100%;
-      margin: 0;
-      padding: 0;
+      overflow: hidden; /* We manage scrolling in .chat-area */
     }
     body {
       font-family: system-ui, sans-serif;
@@ -42,7 +54,6 @@
       color: var(--text-primary);
       transition: background-color 0.3s, color 0.3s;
       -webkit-text-size-adjust: none; /* Helps iOS Safari */
-      overflow: hidden; /* We'll manage scrolling inside .chat-area */
     }
     .app {
       display: flex;
@@ -51,13 +62,19 @@
     }
     /* Header */
     .header {
-      padding: 1rem;
+      padding: 0.5rem 1rem;
       background: var(--bg-secondary);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 1rem;
+      justify-content: space-between;
       flex-shrink: 0;
+      gap: 0.5rem;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
     .menu-btn {
       background: none;
@@ -72,54 +89,18 @@
       background: var(--text-primary);
       margin: 4px 0;
     }
-    /* Voice Controls */
-    .voice-controls {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      padding: 1rem;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .voice-btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 9999px;
-      border: none;
+    .header-actions button {
       background: var(--accent);
-      color: white;
+      color: #fff;
+      border: none;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-weight: 500;
-      transition: all 0.2s;
+      margin-left: 0.5rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 4px;
+      transition: background 0.2s;
     }
-    .voice-btn:hover {
+    .header-actions button:hover {
       background: var(--accent-hover);
-    }
-    .voice-btn.recording {
-      background: var(--error);
-      animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-      100% {
-        transform: scale(1);
-      }
-    }
-    .audio-visualizer {
-      flex: 1;
-      height: 40px;
-      background: var(--bg-primary);
-      border-radius: 20px;
-      overflow: hidden;
-      position: relative;
     }
     /* Sidebar */
     .sidebar {
@@ -129,7 +110,7 @@
       width: 300px;
       height: 100%;
       background: var(--bg-secondary);
-      padding: 1.5rem;
+      padding: 1rem;
       transition: left 0.3s;
       z-index: 10;
       border-right: 1px solid var(--border);
@@ -151,22 +132,52 @@
       font-size: 1rem;
       cursor: pointer;
     }
-    .sidebar input,
-    .sidebar select {
-      width: 100%;
-      padding: 0.5rem;
-      margin: 0.5rem 0;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-    }
     .settings-form {
       display: flex;
       flex-direction: column;
       gap: 1rem;
+      margin-bottom: 1rem;
     }
-    /* Chat area */
+    .sidebar select,
+    .sidebar input {
+      width: 100%;
+      padding: 0.4rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      margin-top: 0.5rem;
+    }
+    .theme-toggle,
+    .font-select {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .conversations-list {
+      margin-top: 1rem;
+    }
+    .conversations-list h3 {
+      margin-bottom: 0.5rem;
+    }
+    .conversations-list ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .conversations-list li {
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.4rem 0.6rem;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+    .conversations-list li:hover {
+      background: var(--accent-hover);
+    }
+    /* Chat Area */
     .chat-area {
       flex: 1;
       overflow-y: auto;
@@ -176,55 +187,51 @@
       gap: 1rem;
     }
     .message-container {
-      max-width: 60%; /* Reduced from 80% for less right padding */
-      display: flex;
-      flex-direction: column;
-      /* We'll offset user messages to the right below */
-    }
-    .assistant-message-container {
-      margin-left: 10px;
-    }
-    .user-message-container {
-      margin-left: auto;
-      margin-right: 10px;
+      width: 100%;
     }
     .message {
       padding: 1rem;
       border-radius: 8px;
-      /* Animate each new message with a slide-fade from below */
-      animation: fadeInUp 0.4s ease-in-out;
+      margin-bottom: 0.5rem;
+      width: 100%;
+      position: relative;
+      /* Animate each new message with a typewriter effect 
+         We'll fill text via JS chunking, so just a fade in baseline */
+      animation: fadeIn 0.3s ease-in;
     }
-    @keyframes fadeInUp {
-      0% {
+    @keyframes fadeIn {
+      from {
         opacity: 0;
-        transform: translateY(10px);
       }
-      100% {
+      to {
         opacity: 1;
-        transform: translateY(0);
       }
     }
     .user-message {
       background: var(--accent);
-      color: white;
+      color: #fff;
     }
     .assistant-message {
       background: var(--bg-secondary);
     }
     .copy-btn {
-      align-self: flex-start;
       background: none;
       border: none;
       color: var(--text-primary);
       cursor: pointer;
-      padding: 0.5rem;
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
       opacity: 0.7;
       transition: opacity 0.3s;
+    }
+    .user-message .copy-btn {
+      color: #fff; /* White for user bubble */
     }
     .copy-btn:hover {
       opacity: 1;
     }
-    /* Input area (sticky at bottom) */
+    /* Input area (sticky) */
     .input-area {
       background: var(--bg-secondary);
       border-top: 1px solid var(--border);
@@ -248,13 +255,14 @@
       color: var(--text-primary);
       min-height: 40px;
       max-height: 200px;
-      font-size: 16px; /* Default size */
+      font-size: 16px; /* default size */
+      font-family: system-ui, sans-serif; /* default family */
       overflow-y: auto;
     }
     .send-btn {
-      padding: 0.75rem 1.5rem;
+      padding: 0.75rem 1.2rem;
       background: var(--accent);
-      color: white;
+      color: #fff;
       border: none;
       border-radius: 4px;
       cursor: pointer;
@@ -273,6 +281,7 @@
       border-radius: 4px;
       display: none;
       animation: slideIn 0.3s ease-out;
+      z-index: 999;
     }
     @keyframes slideIn {
       from {
@@ -282,43 +291,25 @@
         transform: translateX(0);
       }
     }
-    /* Branding link at bottom of app */
-    .branding {
-      text-align: center;
-      padding: 0.25rem;
-      font-size: 0.9rem;
-      opacity: 0.8;
-    }
-    .branding a {
-      color: var(--text-primary);
-      text-decoration: none;
-      border-bottom: 1px dashed var(--text-primary);
-    }
-    .branding a:hover {
-      opacity: 1;
-    }
   </style>
 </head>
 <body>
   <div class="app">
     <!-- HEADER -->
     <header class="header">
-      <button class="menu-btn" onclick="toggleSidebar()">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <h1>OpenAI Chat</h1>
+      <div class="header-left">
+        <button class="menu-btn" onclick="toggleSidebar()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <h1>Chat App</h1>
+      </div>
+      <div class="header-actions">
+        <button onclick="newChat()">New Chat</button>
+        <button onclick="clearChat()">Clear Chat</button>
+      </div>
     </header>
-
-    <!-- VOICE CONTROLS -->
-    <div class="voice-controls" id="voiceControls" style="display: none;">
-      <button class="voice-btn" id="voiceBtn">
-        <i class="fas fa-microphone"></i>
-        Start Recording
-      </button>
-      <div class="audio-visualizer" id="audioVisualizer"></div>
-    </div>
 
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
@@ -326,24 +317,44 @@
         <h2>Settings</h2>
         <button class="close-btn" onclick="toggleSidebar()">X</button>
       </div>
+
       <form class="settings-form" onsubmit="saveSettings(event)">
         <div>
-          <label for="apiKey">API Key</label>
+          <label for="apiKey">API Key:</label>
           <input type="password" id="apiKey" placeholder="sk-..." />
         </div>
+
         <div>
-          <label for="model">Model</label>
-          <select id="model" onchange="handleModelChange()">
-            <option value="gpt-4o">GPT-4o (Flagship)</option>
-            <option value="gpt-4o-mini">GPT-4o Mini (Fast)</option>
-            <option value="o1">O1 (Complex Reasoning)</option>
-            <option value="o1-mini">O1 Mini</option>
-            <option value="gpt-4o-realtime">GPT-4o Realtime</option>
+          <label for="model">Model:</label>
+          <select id="model">
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-4-0613">GPT-4 (0613)</option>
+            <option value="gpt-4-32k">GPT-4 (32k)</option>
+            <option value="gpt-3.5-turbo-16k">GPT-3.5 (16k)</option>
+            <option value="text-davinci-003">Davinci (legacy)</option>
+            <!-- Add or remove as needed -->
           </select>
         </div>
-        <!-- Font size slider for the message input -->
+
+        <div class="font-select">
+          <label for="fontFamily">Font:</label>
+          <select id="fontFamily" onchange="changeFontFamily(this.value)">
+            <option value="system-ui">System UI</option>
+            <option value="Arial">Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="Helvetica">Helvetica</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Palatino">Palatino</option>
+            <option value="Tahoma">Tahoma</option>
+            <option value="Trebuchet MS">Trebuchet MS</option>
+          </select>
+        </div>
+
         <div>
-          <label for="fontSizeRange">Message Font Size</label>
+          <label for="fontSizeRange">Font Size:</label>
           <input
             type="range"
             id="fontSizeRange"
@@ -353,12 +364,20 @@
             oninput="changeFontSize(this.value)"
           />
         </div>
+
         <div class="theme-toggle">
           <label for="themeSwitch">Dark Mode</label>
           <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" />
         </div>
+
         <button type="submit">Save Settings</button>
       </form>
+
+      <!-- Previous Conversations -->
+      <div class="conversations-list">
+        <h3>Previous Chats</h3>
+        <ul id="chatList"></ul>
+      </div>
     </aside>
 
     <!-- MAIN CHAT AREA -->
@@ -378,13 +397,6 @@
           <i class="fas fa-paper-plane"></i>
         </button>
       </form>
-
-      <!-- Subtle branding link -->
-      <div class="branding">
-        <a href="https://www.chatbotbuilder.ai" target="_blank"
-          >Chatbot Builder AI</a
-        >
-      </div>
     </div>
   </div>
 
@@ -392,18 +404,100 @@
   <div class="toast" id="toast">Copied to clipboard!</div>
 
   <script>
-    // GLOBAL STATE
-    let peerConnection = null;
-    let dataChannel = null;
-    let isRecording = false;
-    let currentStream = null;
-    let isProcessing = false; // Prevent spam-click of the Send button
+    /* 
+      GLOBALS & STATE
+    */
+    let isProcessing = false;
+    let currentConversationId = null;
+    let conversations = {}; // { id: { messages: [ ... ], model: '...', timestamp: ... } }
 
-    // THEME HANDLING
+    // THEME
     const savedTheme = localStorage.getItem("theme") || "light";
     document.documentElement.setAttribute("data-theme", savedTheme);
     document.getElementById("themeSwitch").checked = savedTheme === "dark";
 
+    // RESTORE SETTINGS ON LOAD
+    window.addEventListener("DOMContentLoaded", () => {
+      const storedKey = localStorage.getItem("apiKey");
+      const storedModel = localStorage.getItem("model") || "gpt-3.5-turbo";
+      const storedFontSize = localStorage.getItem("fontSize") || "16";
+      const storedFontFamily = localStorage.getItem("fontFamily") || "system-ui";
+
+      // API Key
+      if (storedKey) {
+        document.getElementById("apiKey").value = storedKey;
+      }
+
+      // Model
+      document.getElementById("model").value = storedModel;
+
+      // Font Family
+      document.getElementById("fontFamily").value = storedFontFamily;
+      changeFontFamily(storedFontFamily);
+
+      // Font Size
+      document.getElementById("fontSizeRange").value = storedFontSize;
+      changeFontSize(storedFontSize);
+
+      // Load conversations from localStorage
+      const storedConversations = localStorage.getItem("conversations");
+      if (storedConversations) {
+        conversations = JSON.parse(storedConversations);
+      } else {
+        conversations = {};
+      }
+
+      // If no conversation, create new
+      if (!Object.keys(conversations).length) {
+        newChat();
+      } else {
+        // Otherwise load the "latest" conversation by timestamp
+        const sortedIds = Object.entries(conversations).sort(
+          (a, b) => b[1].timestamp - a[1].timestamp
+        );
+        currentConversationId = sortedIds[0][0];
+        renderChat();
+      }
+
+      updateChatList();
+    });
+
+    /*
+      PWA Installation Notes:
+      - In real production, you'd have a "manifest.json" and icons on your server.
+      - Ensure HTTPS + correct headers for a full PWA experience.
+    */
+
+    /*
+      SIDEBAR TOGGLE
+    */
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.classList.toggle("open");
+    }
+
+    /*
+      SETTINGS
+    */
+    function saveSettings(event) {
+      event.preventDefault();
+      const apiKey = document.getElementById("apiKey").value.trim();
+      const model = document.getElementById("model").value;
+
+      localStorage.setItem("apiKey", apiKey);
+      localStorage.setItem("model", model);
+
+      // Save also to current conversation if exists
+      if (currentConversationId && conversations[currentConversationId]) {
+        conversations[currentConversationId].model = model;
+        saveAllConversations();
+      }
+
+      alert("Settings saved!");
+      toggleSidebar();
+    }
+
+    // THEME
     function toggleTheme() {
       const isDark = document.getElementById("themeSwitch").checked;
       const theme = isDark ? "dark" : "light";
@@ -411,80 +505,144 @@
       localStorage.setItem("theme", theme);
     }
 
-    // SIDEBAR TOGGLE
-    function toggleSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      sidebar.classList.toggle("open");
-    }
-
-    // SAVE SETTINGS
-    function saveSettings(event) {
-      event.preventDefault();
-      const apiKey = document.getElementById("apiKey").value.trim();
-      const model = document.getElementById("model").value;
-      localStorage.setItem("apiKey", apiKey);
-      localStorage.setItem("model", model);
-      alert("Settings saved!");
-      toggleSidebar();
-    }
-
-    // RESTORE SETTINGS ON LOAD
-    window.addEventListener("DOMContentLoaded", () => {
-      const storedKey = localStorage.getItem("apiKey");
-      const storedModel = localStorage.getItem("model");
-      if (storedKey) document.getElementById("apiKey").value = storedKey;
-      if (storedModel) document.getElementById("model").value = storedModel;
-    });
-
-    // COPY TO CLIPBOARD
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => {
-        showToast();
-      });
-    }
-    // TOAST HELPER
-    function showToast() {
-      const toast = document.getElementById("toast");
-      toast.style.display = "block";
-      setTimeout(() => {
-        toast.style.display = "none";
-      }, 2000);
-    }
-
-    // AUTO-GROW TEXTAREA
-    function autoGrow(textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    }
-
-    // FONT SIZE RANGE
+    // FONT SIZE
     function changeFontSize(val) {
       const textarea = document.getElementById("messageInput");
       textarea.style.fontSize = val + "px";
+      localStorage.setItem("fontSize", val);
     }
 
-    // MAIN CHAT FUNCTIONALITY
-    function addMessage(content, role) {
+    // FONT FAMILY
+    function changeFontFamily(family) {
+      const textarea = document.getElementById("messageInput");
+      textarea.style.fontFamily = family;
+      localStorage.setItem("fontFamily", family);
+    }
+
+    /*
+      CHAT & CONVERSATIONS
+    */
+    function newChat() {
+      // Create new ID
+      const newId = Date.now().toString();
+      const model = document.getElementById("model").value;
+      conversations[newId] = {
+        messages: [],
+        model: model,
+        timestamp: Date.now(),
+      };
+      currentConversationId = newId;
+      saveAllConversations();
+      renderChat();
+      updateChatList();
+    }
+
+    function clearChat() {
+      if (currentConversationId && conversations[currentConversationId]) {
+        conversations[currentConversationId].messages = [];
+        saveAllConversations();
+        renderChat();
+      }
+    }
+
+    function loadConversation(id) {
+      currentConversationId = id;
+      if (conversations[id]) {
+        // Update model selector
+        document.getElementById("model").value = conversations[id].model || "gpt-3.5-turbo";
+      }
+      renderChat();
+      updateChatList(); // to reorder by usage
+      toggleSidebar();
+    }
+
+    function updateChatList() {
+      // sort by timestamp desc
+      const sorted = Object.entries(conversations).sort((a, b) => b[1].timestamp - a[1].timestamp);
+      const ul = document.getElementById("chatList");
+      ul.innerHTML = "";
+      for (let [id, convo] of sorted) {
+        const li = document.createElement("li");
+        li.textContent = "Chat " + id; // or a friendlier label
+        li.onclick = () => loadConversation(id);
+        ul.appendChild(li);
+      }
+    }
+
+    function saveAllConversations() {
+      localStorage.setItem("conversations", JSON.stringify(conversations));
+    }
+
+    function renderChat() {
+      const chatArea = document.getElementById("chatArea");
+      chatArea.innerHTML = "";
+      if (!conversations[currentConversationId]) return;
+
+      const messages = conversations[currentConversationId].messages;
+      messages.forEach((msg) => {
+        addMessageToDOM(msg.content, msg.role, false /* no scroll */, msg.model);
+      });
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    /*
+      MESSAGE DISPLAY (with typed streaming for assistant)
+    */
+    function addMessageToDOM(text, role, doScroll = true, modelName = "") {
+      const chatArea = document.getElementById("chatArea");
       const container = document.createElement("div");
-      container.className = `message-container ${role}-message-container`;
+      container.classList.add("message-container");
+
       const messageDiv = document.createElement("div");
-      messageDiv.className = `message ${role}-message`;
-      messageDiv.textContent = content;
+      messageDiv.classList.add("message");
+      messageDiv.classList.add(role + "-message");
       container.appendChild(messageDiv);
 
-      if (role === "assistant") {
-        const copyButton = document.createElement("button");
-        copyButton.className = "copy-btn";
-        copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-        copyButton.onclick = () => copyToClipboard(content);
-        container.appendChild(copyButton);
+      // Add copy button
+      const copyButton = document.createElement("button");
+      copyButton.className = "copy-btn";
+      copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+      copyButton.onclick = () => copyToClipboard(text);
+      messageDiv.appendChild(copyButton);
+
+      // If assistant, prepend the "(Model) " text
+      let textToShow = text;
+      if (role === "assistant" && modelName) {
+        textToShow = `(${modelName}) ` + text;
       }
 
-      const chatArea = document.getElementById("chatArea");
+      if (role === "assistant") {
+        // typed streaming
+        typedText(messageDiv, textToShow);
+      } else {
+        // user or system
+        messageDiv.textContent = text;
+      }
+
       chatArea.appendChild(container);
-      container.scrollIntoView({ behavior: "smooth" });
+      if (doScroll) {
+        container.scrollIntoView({ behavior: "smooth" });
+      }
     }
 
+    // Type out text with a small delay
+    function typedText(element, fullText) {
+      element.textContent = "";
+      let idx = 0;
+      const speed = 20; // ms per character
+      function typeChar() {
+        if (idx < fullText.length) {
+          element.textContent += fullText.charAt(idx);
+          idx++;
+          setTimeout(typeChar, speed);
+        }
+      }
+      typeChar();
+    }
+
+    /*
+      SENDING MESSAGES
+    */
     async function sendMessage(event) {
       event.preventDefault();
       if (isProcessing) return;
@@ -498,68 +656,151 @@
           return;
         }
 
-        // Add user message
-        addMessage(userMessage, "user");
-        input.value = "";
-        autoGrow(input); // reset height
+        // Add user message to DOM
+        addMessageToDOM(userMessage, "user");
 
-        // Check if realtime or normal
-        const model = localStorage.getItem("model") || "gpt-4o";
-        if (model === "gpt-4o-realtime") {
-          // Send event over data channel
-          if (dataChannel) {
-            const eventPayload = {
-              type: "response.create",
-              response: {
-                modalities: ["text", "audio"], // voice-to-voice
-                instructions: userMessage,
-              },
-            };
-            dataChannel.send(JSON.stringify(eventPayload));
-          }
-          // Wait for the handleRealtimeEvent to respond
-        } else {
-          // Normal REST-based request
-          const apiKey = localStorage.getItem("apiKey") || "";
-          if (!apiKey) {
-            addMessage("Error: No API key set in settings!", "assistant");
-            isProcessing = false;
-            return;
-          }
-          const response = await fetch(
-            "https://api.openai.com/v1/chat/completions",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-              },
-              body: JSON.stringify({
-                model: model,
-                messages: [{ role: "user", content: userMessage }],
-              }),
-            }
-          );
-          if (!response.ok) {
-            const err = await response.text();
-            addMessage("Error from API:\n" + err, "assistant");
-            isProcessing = false;
-            return;
-          }
-          const json = await response.json();
-          const content =
-            json?.choices?.[0]?.message?.content || "(No response)";
-          addMessage(content, "assistant");
+        // Add to conversation in memory
+        addMessageToConversation(userMessage, "user");
+
+        // Clear input
+        input.value = "";
+        autoGrow(input);
+
+        // Send request to OpenAI with streaming
+        const apiKey = localStorage.getItem("apiKey") || "";
+        if (!apiKey) {
+          addMessageToDOM("Error: No API key set in settings!", "assistant");
+          addMessageToConversation("Error: No API key set in settings!", "assistant");
+          isProcessing = false;
+          return;
         }
+
+        const model = conversations[currentConversationId].model || "gpt-3.5-turbo";
+        // Call openai with stream: true
+        const endpoint = "https://api.openai.com/v1/chat/completions";
+        const payload = {
+          model: model,
+          messages: [{ role: "user", content: userMessage }],
+          stream: true,
+        };
+
+        // Create a placeholder to store the final text
+        let assistantFullText = "";
+
+        // Add placeholder assistant message (empty for now)
+        const chatArea = document.getElementById("chatArea");
+        const container = document.createElement("div");
+        container.classList.add("message-container");
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message", "assistant-message");
+        container.appendChild(messageDiv);
+
+        // Copy button
+        const copyButton = document.createElement("button");
+        copyButton.className = "copy-btn";
+        copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+        copyButton.onclick = () => copyToClipboard(assistantFullText);
+        messageDiv.appendChild(copyButton);
+
+        // Prepend model
+        const modelPrefix = `(${model}) `;
+        chatArea.appendChild(container);
+        container.scrollIntoView({ behavior: "smooth" });
+
+        // We'll type out the text
+        let typedIndex = 0;
+        let streamingInterval = null;
+
+        // Stream fetch
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok || !response.body) {
+          const err = await response.text();
+          messageDiv.textContent = modelPrefix + "Error: " + err;
+          addMessageToConversation(err, "assistant");
+          isProcessing = false;
+          return;
+        }
+
+        // Decode the stream
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let done = false;
+
+        // We'll collect all text, then type it out chunk by chunk using typedText logic
+        // But to show partial typing as we decode, we do a simpler approach:
+        let finalText = "";
+
+        while (!done) {
+          const { value, done: readerDone } = await reader.read();
+          done = readerDone;
+          if (value) {
+            const chunk = decoder.decode(value, { stream: true });
+            // The chunk can have multiple "data:" lines
+            const lines = chunk.split("\n").filter((line) => line.trim().startsWith("data:"));
+            for (let line of lines) {
+              line = line.replace("data: ", "").trim();
+              if (line === "[DONE]") {
+                // finished
+                done = true;
+                break;
+              }
+              try {
+                const parsed = JSON.parse(line);
+                const content = parsed?.choices?.[0]?.delta?.content;
+                if (content) {
+                  finalText += content;
+                  // Real-time partial typing
+                  messageDiv.textContent = modelPrefix + finalText;
+                  assistantFullText = finalText;
+                  container.scrollIntoView({ behavior: "smooth" });
+                }
+              } catch (err) {
+                console.error("Parse error: ", err, line);
+              }
+            }
+          }
+        }
+
+        // Save final text to conversation
+        addMessageToConversation(assistantFullText, "assistant");
       } catch (error) {
         console.error(error);
-        addMessage("An error occurred: " + error.message, "assistant");
+        addMessageToDOM("Error: " + error.message, "assistant");
+        addMessageToConversation("Error: " + error.message, "assistant");
       } finally {
         isProcessing = false;
+        // Update last used timestamp
+        if (conversations[currentConversationId]) {
+          conversations[currentConversationId].timestamp = Date.now();
+          saveAllConversations();
+          updateChatList();
+        }
       }
     }
 
-    // HANDLE ENTER KEY
+    function addMessageToConversation(content, role) {
+      if (!conversations[currentConversationId]) return;
+      conversations[currentConversationId].messages.push({ role, content, model: conversations[currentConversationId].model });
+      // Save to localStorage
+      saveAllConversations();
+    }
+
+    /*
+      UI HELPERS
+    */
+    function autoGrow(textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+
     function handleKeyPress(event) {
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
@@ -567,123 +808,18 @@
       }
     }
 
-    // WEBRTC SETUP (Realtime)
-    async function setupWebRTC() {
-      try {
-        // This endpoint must return an ephemeral token
-        const tokenResponse = await fetch("/session");
-        const data = await tokenResponse.json();
-        const ephemeralKey = data.client_secret.value;
-
-        // Create peer connection
-        peerConnection = new RTCPeerConnection();
-
-        // Remote audio
-        const audioEl = document.createElement("audio");
-        audioEl.autoplay = true;
-        peerConnection.ontrack = (e) => (audioEl.srcObject = e.streams[0]);
-
-        // Local mic
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        currentStream = stream;
-        peerConnection.addTrack(stream.getTracks()[0]);
-
-        // Data channel
-        dataChannel = peerConnection.createDataChannel("oai-events");
-        dataChannel.addEventListener("message", handleRealtimeEvent);
-
-        // Create offer
-        const offer = await peerConnection.createOffer();
-        await peerConnection.setLocalDescription(offer);
-
-        // Connect to Realtime API
-        const response = await fetch(
-          "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
-          {
-            method: "POST",
-            body: offer.sdp,
-            headers: {
-              Authorization: `Bearer ${ephemeralKey}`,
-              "Content-Type": "application/sdp",
-            },
-          }
-        );
-        const answer = {
-          type: "answer",
-          sdp: await response.text(),
-        };
-        await peerConnection.setRemoteDescription(answer);
-
-        return true;
-      } catch (error) {
-        console.error("WebRTC setup failed:", error);
-        return false;
-      }
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 2000);
     }
 
-    function handleRealtimeEvent(event) {
-      const data = JSON.parse(event.data);
-      console.log("Received Realtime event:", data);
-
-      // If it's text from the model, display it
-      if (data.type === "text") {
-        addMessage(data.text, "assistant");
-      }
-      // The model can also send back audio, which is auto-played via peerConnection
-    }
-
-    // VOICE BUTTON
-    const voiceBtn = document.getElementById("voiceBtn");
-    voiceBtn.addEventListener("click", toggleRecording);
-
-    async function toggleRecording() {
-      if (!isRecording) {
-        // Start recording
-        isRecording = true;
-        voiceBtn.classList.add("recording");
-        voiceBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
-        // Send start event
-        if (dataChannel) {
-          dataChannel.send(
-            JSON.stringify({
-              type: "start_recording",
-            })
-          );
-        }
-      } else {
-        // Stop recording
-        isRecording = false;
-        voiceBtn.classList.remove("recording");
-        voiceBtn.innerHTML = '<i class="fas fa-microphone"></i> Start Recording';
-        // Send stop event
-        if (dataChannel) {
-          dataChannel.send(
-            JSON.stringify({
-              type: "stop_recording",
-            })
-          );
-        }
-      }
-    }
-
-    // MODEL CHANGE
-    function handleModelChange() {
-      const model = document.getElementById("model").value;
-      const voiceControls = document.getElementById("voiceControls");
-      if (model === "gpt-4o-realtime") {
-        voiceControls.style.display = "flex";
-        setupWebRTC();
-      } else {
-        voiceControls.style.display = "none";
-        if (currentStream) {
-          currentStream.getTracks().forEach((track) => track.stop());
-          currentStream = null;
-        }
-        if (peerConnection) {
-          peerConnection.close();
-          peerConnection = null;
-        }
-      }
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast();
+      });
     }
   </script>
 </body>
