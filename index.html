@@ -2,432 +2,736 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multi-Model Compare</title>
+  <title>Multi-Model Compare (with Dark/Light Mode)</title>
+
+  <!-- Make it a minimal PWA-ish setup (optional) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="manifest" href="manifest.json" />
+  
+  <!-- Import FontAwesome for icons -->
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    rel="stylesheet"
+  />
+
   <style>
+    /* -----------------------------------
+       Root + Dark/Light Theme
+    ----------------------------------- */
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f5;
+      --text-primary: #333333;
+      --border: #e5e5e5;
+      --accent: #36D6B5;    /* Brand color */
+      --accent-hover: #2eb9a3;
+      --error: #dc2626;
+    }
+    [data-theme="dark"] {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --text-primary: #ffffff;
+      --border: #404040;
+    }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+    html,
     body {
-      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
+      height: 100%;
     }
-    /* Simple layout */
-    #menuToggle {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      cursor: pointer;
-      padding: 5px 10px;
-      background: #ccc;
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: background-color 0.3s, color 0.3s;
+      -webkit-text-size-adjust: none; /* iOS Safari helps */
+    }
+
+    /* -----------------------------------
+       Main App Layout
+    ----------------------------------- */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    /* -----------------------------------
+       Header
+    ----------------------------------- */
+    .header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .menu-btn {
+      background: none;
       border: none;
-      border-radius: 4px;
+      cursor: pointer;
+      padding: 0.5rem;
     }
-    #menu {
-      display: none;
-      position: absolute;
-      top: 50px;
-      left: 10px;
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      padding: 1rem;
-      width: 300px;
-      border-radius: 4px;
-    }
-    label {
+    .menu-btn span {
       display: block;
-      margin-top: 1rem;
-      font-weight: bold;
+      width: 20px;
+      height: 2px;
+      background: var(--text-primary);
+      margin: 4px 0;
     }
-    #apiKeyStatus {
-      color: green;
-      margin: 0.5rem 0;
+    .header-actions button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      margin-left: 0.5rem;
+      padding: 0.5rem 0.8rem;
+      border-radius: 4px;
+      transition: background 0.2s;
     }
-    #chatWindow {
-      margin: 60px 10px 60px 10px;
-      padding: 1rem;
-      border: 1px solid #ddd;
-      height: 400px;
+    .header-actions button:hover {
+      background: var(--accent-hover);
+    }
+
+    /* -----------------------------------
+       Sidebar (Hamburger Menu)
+    ----------------------------------- */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -350px; /* hidden off-screen */
+      width: 350px;
+      height: 100%;
+      background: var(--bg-secondary);
+      padding: 1.5rem;
+      transition: left 0.3s;
+      z-index: 10;
+      border-right: 1px solid var(--border);
       overflow-y: auto;
     }
-    .userMessage {
-      background: #36d6b5;
-      color: #fff;
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 5px;
-    }
-    .assistantMessage {
-      background: #eaeaea;
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 5px;
-    }
-    .geminiResponse {
-      border-left: 6px solid #eb9a00; /* Distinguish each vendor if you like */
-      padding-left: 5px;
-    }
-    .openaiResponse {
-      border-left: 6px solid #0066cc;
-      padding-left: 5px;
-    }
-    .grokResponse {
-      border-left: 6px solid #7b2e90;
-      padding-left: 5px;
-    }
-    #inputArea {
-      position: fixed;
-      bottom: 0;
+    .sidebar.open {
       left: 0;
-      right: 0;
-      background: #f5f5f5;
-      padding: 1rem;
-      border-top: 1px solid #ddd;
+    }
+    .sidebar-header {
       display: flex;
-      gap: 0.5rem;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
     }
-    #userInput {
-      flex: 1;
-      padding: 0.5rem;
-      font-size: 1rem;
-    }
-    #sendButton {
-      padding: 0.5rem 1rem;
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-primary);
       font-size: 1rem;
       cursor: pointer;
-      border: none;
-      background: #36d6b5;
-      color: #fff;
-      border-radius: 4px;
     }
-    /* Simple model lists */
-    .modelList {
+    .sidebar label {
+      display: block;
       margin-top: 1rem;
-      padding-left: 1rem;
+      font-weight: 600;
+    }
+    .sidebar input,
+    .sidebar select {
+      width: 100%;
+      margin-top: 0.25rem;
+      padding: 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+    .sidebar button.save-btn {
+      margin-top: 1rem;
+      background: var(--accent);
+      border: none;
+      color: white;
+      padding: 0.6rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .sidebar button.save-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .modelList {
+      margin: 0.5rem 0 0.5rem 1rem;
+      font-size: 0.95rem;
+    }
+    .modelList input {
+      margin-right: 0.4rem;
+    }
+
+    #apiKeyStatus {
+      color: var(--accent);
+      margin-top: 0.5rem;
+    }
+
+    /* -----------------------------------
+       Chat Area
+    ----------------------------------- */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .message-container {
+      width: 100%;
+    }
+    .message {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      position: relative;
+      animation: fadeInUp 0.4s ease-in-out;
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .user-message {
+      background: var(--accent);
+      color: #fff;
+    }
+    .assistant-message {
+      background: var(--bg-secondary);
+    }
+
+    /* Distinguish each vendor with left border or color accent */
+    .geminiResponse {
+      border-left: 5px solid gold; /* example color for Gemini */
+      padding-left: 0.75rem;
+    }
+    .openaiResponse {
+      border-left: 5px solid #0066cc; /* example color for OpenAI */
+      padding-left: 0.75rem;
+    }
+    .grokResponse {
+      border-left: 5px solid #7b2e90; /* example color for Grok */
+      padding-left: 0.75rem;
+    }
+
+    .copy-btn {
+      position: absolute;
+      right: 8px;
+      bottom: 8px;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+    .user-message .copy-btn {
+      color: #fff;
+    }
+    .copy-btn:hover {
+      opacity: 1;
+    }
+
+    /* -----------------------------------
+       Input Area (sticky bottom)
+    ----------------------------------- */
+    .input-area {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 0.5rem;
+      flex-shrink: 0;
+      position: sticky;
+      bottom: 0;
+    }
+    .input-form {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-start;
+    }
+    .input-form textarea {
+      flex: 1;
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      resize: none;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 40px;
+      max-height: 200px;
+      font-size: 16px;
+      overflow-y: auto;
+    }
+    .send-btn {
+      padding: 0.75rem 1.2rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .send-btn:hover {
+      background: var(--accent-hover);
+    }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 1rem;
+      background: var(--accent);
+      color: white;
+      border-radius: 4px;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+      z-index: 999;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+      }
+      to {
+        transform: translateX(0);
+      }
     }
   </style>
 </head>
 <body>
-<button id="menuToggle" onclick="toggleMenu()">Menu</button>
+  <div class="app">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <button class="menu-btn" onclick="toggleSidebar()">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <h1>Multi-Model Chat</h1>
+      </div>
+      <div class="header-actions">
+        <!-- You could add more buttons or controls if needed -->
+      </div>
+    </header>
 
-<div id="menu">
-  <h3>Settings</h3>
-  <!-- Gemini API Key -->
-  <label for="geminiApiKeyInput">Gemini API Key:</label>
-  <input type="password" id="geminiApiKeyInput" />
-  <button onclick="toggleVisibility('geminiApiKeyInput')">Show</button>
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2>Settings</h2>
+        <button class="close-btn" onclick="toggleSidebar()">X</button>
+      </div>
 
-  <!-- OpenAI API Key -->
-  <label for="openAiApiKeyInput">OpenAI API Key:</label>
-  <input type="password" id="openAiApiKeyInput" />
-  <button onclick="toggleVisibility('openAiApiKeyInput')">Show</button>
+      <!-- API Key Inputs -->
+      <label for="geminiApiKeyInput">Gemini API Key:</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="password" id="geminiApiKeyInput" />
+        <button style="width: 70px;" onclick="toggleVisibility('geminiApiKeyInput')">Show</button>
+      </div>
 
-  <!-- Grok API Key -->
-  <label for="grokApiKeyInput">Grok API Key:</label>
-  <input type="password" id="grokApiKeyInput" />
-  <button onclick="toggleVisibility('grokApiKeyInput')">Show</button>
+      <label for="openAiApiKeyInput">OpenAI API Key:</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="password" id="openAiApiKeyInput" />
+        <button style="width: 70px;" onclick="toggleVisibility('openAiApiKeyInput')">Show</button>
+      </div>
 
-  <hr />
+      <label for="grokApiKeyInput">Grok API Key:</label>
+      <div style="display: flex; gap: 0.5rem;">
+        <input type="password" id="grokApiKeyInput" />
+        <button style="width: 70px;" onclick="toggleVisibility('grokApiKeyInput')">Show</button>
+      </div>
 
-  <!-- Model Selections -->
-  <h4>Select Models</h4>
+      <hr />
 
-  <p><strong>Gemini:</strong></p>
-  <div class="modelList">
-    <input type="checkbox" id="geminiModel_1" value="gemini-1.5-flash" /> gemini-1.5-flash<br />
-    <input type="checkbox" id="geminiModel_2" value="gemini-2.0-flash" /> gemini-2.0-flash
+      <!-- Model Selections -->
+      <h3>Select Models</h3>
+      <label>Gemini:</label>
+      <div class="modelList">
+        <input type="checkbox" id="geminiModel_1" value="gemini-1.5-flash" /> gemini-1.5-flash<br />
+        <input type="checkbox" id="geminiModel_2" value="gemini-2.0-flash" /> gemini-2.0-flash
+      </div>
+
+      <label>OpenAI:</label>
+      <div class="modelList">
+        <input type="checkbox" id="openAiModel_gpt35" value="gpt-3.5-turbo" /> GPT-3.5 Turbo <br />
+        <input type="checkbox" id="openAiModel_gpt4" value="gpt-4" /> GPT-4 <br />
+        <input type="checkbox" id="openAiModel_gpt432k" value="gpt-4-32k" /> GPT-4 32k
+      </div>
+
+      <label>Grok:</label>
+      <div class="modelList">
+        <input type="checkbox" id="grokModel_beta" value="grok-beta" /> grok-beta<br />
+        <input type="checkbox" id="grokModel_latest" value="grok-latest" /> grok-latest
+      </div>
+
+      <hr />
+      <!-- Dark Mode Toggle -->
+      <div class="theme-toggle">
+        <label for="themeSwitch" style="margin:0;">Dark Mode</label>
+        <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" />
+      </div>
+
+      <button class="save-btn" onclick="saveSettings()">Save</button>
+      <p id="apiKeyStatus"></p>
+    </aside>
+
+    <!-- MAIN CHAT AREA -->
+    <main class="chat-area" id="chatArea"></main>
+
+    <!-- INPUT AREA -->
+    <div class="input-area">
+      <form class="input-form" onsubmit="handleSubmit(event)">
+        <textarea
+          id="messageInput"
+          placeholder="Type your message..."
+          rows="1"
+          onkeydown="handleKeyPress(event)"
+          oninput="autoGrow(this)"
+        ></textarea>
+        <button type="submit" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+      </form>
+    </div>
   </div>
 
-  <p><strong>OpenAI:</strong></p>
-  <div class="modelList">
-    <input type="checkbox" id="openAiModel_gpt35" value="gpt-3.5-turbo" /> GPT-3.5 Turbo <br />
-    <input type="checkbox" id="openAiModel_gpt4" value="gpt-4" /> GPT-4 <br />
-    <input type="checkbox" id="openAiModel_gpt432k" value="gpt-4-32k" /> GPT-4 32k
-  </div>
+  <!-- TOAST -->
+  <div class="toast" id="toast">Copied to clipboard!</div>
 
-  <p><strong>Grok:</strong></p>
-  <div class="modelList">
-    <input type="checkbox" id="grokModel_beta" value="grok-beta" /> grok-beta <br />
-    <input type="checkbox" id="grokModel_latest" value="grok-latest" /> grok-latest
-  </div>
+  <script>
+    /* -----------------------------------
+       Global State
+    ----------------------------------- */
+    let isProcessing = false;
 
-  <hr />
+    // API Keys
+    let geminiApiKey = "";
+    let openAiApiKey = "";
+    let grokApiKey = "";
 
-  <button onclick="saveSettings()">Save</button>
-  <p id="apiKeyStatus"></p>
-</div>
+    // Model selections
+    let selectedGeminiModels = [];
+    let selectedOpenAiModels = [];
+    let selectedGrokModels = [];
 
-<div id="chatWindow"></div>
-
-<div id="inputArea">
-  <input
-    type="text"
-    id="userInput"
-    placeholder="Type your message here"
-    onkeypress="handleKeyPress(event)"
-  />
-  <button id="sendButton" onclick="sendMessage()">Send</button>
-</div>
-
-<script>
-/* ------------------------------
-   GLOBAL STATE
------------------------------- */
-let geminiApiKey = "";
-let openAiApiKey = "";
-let grokApiKey = "";
-
-// We'll store selected models in arrays
-// e.g. selectedOpenAiModels = ["gpt-3.5-turbo", "gpt-4"];
-let selectedGeminiModels = [];
-let selectedOpenAiModels = [];
-let selectedGrokModels = [];
-
-/* ------------------------------
-   ON LOAD
------------------------------- */
-window.onload = function () {
-  // Load stored keys
-  geminiApiKey = localStorage.getItem("geminiApiKey") || "";
-  openAiApiKey = localStorage.getItem("openAiApiKey") || "";
-  grokApiKey = localStorage.getItem("grokApiKey") || "";
-
-  document.getElementById("geminiApiKeyInput").value = geminiApiKey;
-  document.getElementById("openAiApiKeyInput").value = openAiApiKey;
-  document.getElementById("grokApiKeyInput").value = grokApiKey;
-
-  // Load selected models
-  selectedGeminiModels = JSON.parse(localStorage.getItem("selectedGeminiModels") || "[]");
-  selectedOpenAiModels = JSON.parse(localStorage.getItem("selectedOpenAiModels") || "[]");
-  selectedGrokModels = JSON.parse(localStorage.getItem("selectedGrokModels") || "[]");
-
-  // Check the corresponding checkboxes
-  // Gemini
-  if (selectedGeminiModels.includes("gemini-1.5-flash")) {
-    document.getElementById("geminiModel_1").checked = true;
-  }
-  if (selectedGeminiModels.includes("gemini-2.0-flash")) {
-    document.getElementById("geminiModel_2").checked = true;
-  }
-  // OpenAI
-  if (selectedOpenAiModels.includes("gpt-3.5-turbo")) {
-    document.getElementById("openAiModel_gpt35").checked = true;
-  }
-  if (selectedOpenAiModels.includes("gpt-4")) {
-    document.getElementById("openAiModel_gpt4").checked = true;
-  }
-  if (selectedOpenAiModels.includes("gpt-4-32k")) {
-    document.getElementById("openAiModel_gpt432k").checked = true;
-  }
-  // Grok
-  if (selectedGrokModels.includes("grok-beta")) {
-    document.getElementById("grokModel_beta").checked = true;
-  }
-  if (selectedGrokModels.includes("grok-latest")) {
-    document.getElementById("grokModel_latest").checked = true;
-  }
-};
-
-/* ------------------------------
-   MENU / SETTINGS
------------------------------- */
-function toggleMenu() {
-  const menu = document.getElementById("menu");
-  if (menu.style.display === "block") {
-    menu.style.display = "none";
-  } else {
-    menu.style.display = "block";
-  }
-}
-
-// Toggle password visibility
-function toggleVisibility(inputId) {
-  const input = document.getElementById(inputId);
-  input.type = input.type === "password" ? "text" : "password";
-}
-
-// Save settings to localStorage
-function saveSettings() {
-  // Grab user input
-  geminiApiKey = document.getElementById("geminiApiKeyInput").value;
-  openAiApiKey = document.getElementById("openAiApiKeyInput").value;
-  grokApiKey = document.getElementById("grokApiKeyInput").value;
-
-  localStorage.setItem("geminiApiKey", geminiApiKey);
-  localStorage.setItem("openAiApiKey", openAiApiKey);
-  localStorage.setItem("grokApiKey", grokApiKey);
-
-  // Build arrays of selected models
-  const gemini1 = document.getElementById("geminiModel_1");
-  const gemini2 = document.getElementById("geminiModel_2");
-  selectedGeminiModels = [];
-  if (gemini1.checked) selectedGeminiModels.push(gemini1.value);
-  if (gemini2.checked) selectedGeminiModels.push(gemini2.value);
-  localStorage.setItem("selectedGeminiModels", JSON.stringify(selectedGeminiModels));
-
-  const openAi35 = document.getElementById("openAiModel_gpt35");
-  const openAi4 = document.getElementById("openAiModel_gpt4");
-  const openAi432k = document.getElementById("openAiModel_gpt432k");
-  selectedOpenAiModels = [];
-  if (openAi35.checked) selectedOpenAiModels.push(openAi35.value);
-  if (openAi4.checked) selectedOpenAiModels.push(openAi4.value);
-  if (openAi432k.checked) selectedOpenAiModels.push(openAi432k.value);
-  localStorage.setItem("selectedOpenAiModels", JSON.stringify(selectedOpenAiModels));
-
-  const grokBeta = document.getElementById("grokModel_beta");
-  const grokLatest = document.getElementById("grokModel_latest");
-  selectedGrokModels = [];
-  if (grokBeta.checked) selectedGrokModels.push(grokBeta.value);
-  if (grokLatest.checked) selectedGrokModels.push(grokLatest.value);
-  localStorage.setItem("selectedGrokModels", JSON.stringify(selectedGrokModels));
-
-  // Notify user
-  document.getElementById("apiKeyStatus").innerText = "Settings saved!";
-  setTimeout(() => {
-    document.getElementById("apiKeyStatus").innerText = "";
-  }, 1500);
-  toggleMenu();
-}
-
-/* ------------------------------
-   CHAT LOGIC
------------------------------- */
-// Handle Enter key
-function handleKeyPress(event) {
-  if (event.key === "Enter") {
-    sendMessage();
-  }
-}
-
-// Send message
-function sendMessage() {
-  const userInputEl = document.getElementById("userInput");
-  const userInput = userInputEl.value.trim();
-  if (!userInput) return;
-
-  // Display user message
-  appendMessage("user", userInput);
-
-  // Clear input
-  userInputEl.value = "";
-
-  // If we have an API key, call each selected model
-  // GEMINI
-  if (geminiApiKey && selectedGeminiModels.length) {
-    selectedGeminiModels.forEach((model) => {
-      sendGeminiRequest(userInput, model);
+    // THEME
+    const savedTheme = localStorage.getItem("theme") || "light";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("themeSwitch").checked = (savedTheme === "dark");
     });
-  }
 
-  // OPENAI
-  if (openAiApiKey && selectedOpenAiModels.length) {
-    selectedOpenAiModels.forEach((model) => {
-      sendOpenAiRequest(userInput, model);
-    });
-  }
+    /* -----------------------------------
+       On Load: Restore from localStorage
+    ----------------------------------- */
+    window.onload = function() {
+      // Load keys
+      geminiApiKey = localStorage.getItem("geminiApiKey") || "";
+      openAiApiKey = localStorage.getItem("openAiApiKey") || "";
+      grokApiKey = localStorage.getItem("grokApiKey") || "";
 
-  // GROK
-  if (grokApiKey && selectedGrokModels.length) {
-    selectedGrokModels.forEach((model) => {
-      sendGrokRequest(userInput, model);
-    });
-  }
-}
+      // Set input fields
+      document.getElementById("geminiApiKeyInput").value = geminiApiKey;
+      document.getElementById("openAiApiKeyInput").value = openAiApiKey;
+      document.getElementById("grokApiKeyInput").value = grokApiKey;
 
-/* ------------------------------
-   APPEND MESSAGE TO CHAT
------------------------------- */
-function appendMessage(role, message, type = "") {
-  const chatWindow = document.getElementById("chatWindow");
-  const messageElement = document.createElement("p");
+      // Load model checkboxes
+      selectedGeminiModels = JSON.parse(localStorage.getItem("selectedGeminiModels") || "[]");
+      selectedOpenAiModels = JSON.parse(localStorage.getItem("selectedOpenAiModels") || "[]");
+      selectedGrokModels = JSON.parse(localStorage.getItem("selectedGrokModels") || "[]");
 
-  if (role === "user") {
-    messageElement.classList.add("userMessage");
-  } else {
-    messageElement.classList.add("assistantMessage");
-    if (type) {
-      messageElement.classList.add(`${type}Response`);
+      // Mark checkboxes
+      if (selectedGeminiModels.includes("gemini-1.5-flash")) {
+        document.getElementById("geminiModel_1").checked = true;
+      }
+      if (selectedGeminiModels.includes("gemini-2.0-flash")) {
+        document.getElementById("geminiModel_2").checked = true;
+      }
+      if (selectedOpenAiModels.includes("gpt-3.5-turbo")) {
+        document.getElementById("openAiModel_gpt35").checked = true;
+      }
+      if (selectedOpenAiModels.includes("gpt-4")) {
+        document.getElementById("openAiModel_gpt4").checked = true;
+      }
+      if (selectedOpenAiModels.includes("gpt-4-32k")) {
+        document.getElementById("openAiModel_gpt432k").checked = true;
+      }
+      if (selectedGrokModels.includes("grok-beta")) {
+        document.getElementById("grokModel_beta").checked = true;
+      }
+      if (selectedGrokModels.includes("grok-latest")) {
+        document.getElementById("grokModel_latest").checked = true;
+      }
+    };
+
+    /* -----------------------------------
+       Toggle Sidebar
+    ----------------------------------- */
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      sidebar.classList.toggle("open");
     }
-  }
-  messageElement.innerText = message;
-  chatWindow.appendChild(messageElement);
 
-  // Auto-scroll
-  chatWindow.scrollTop = chatWindow.scrollHeight;
-}
+    /* -----------------------------------
+       Theme Toggle
+    ----------------------------------- */
+    function toggleTheme() {
+      const isDark = document.getElementById("themeSwitch").checked;
+      const theme = isDark ? "dark" : "light";
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+    }
 
-/* ------------------------------
-   API REQUESTS
------------------------------- */
-// 1) GEMINI
-function sendGeminiRequest(userInput, model) {
-  // Example: gemini-1.5-flash => use the path /v1beta/models/gemini-1.5-flash:generateContent
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-  fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [
-        { parts: [{ text: userInput }] }
-      ]
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
-      appendMessage("assistant", text, "gemini");
-    })
-    .catch((error) => {
-      appendMessage("assistant", `Error: ${error.message}`, "gemini");
-    });
-}
+    /* -----------------------------------
+       Save Settings
+    ----------------------------------- */
+    function saveSettings() {
+      // Grab user input
+      geminiApiKey = document.getElementById("geminiApiKeyInput").value.trim();
+      openAiApiKey = document.getElementById("openAiApiKeyInput").value.trim();
+      grokApiKey = document.getElementById("grokApiKeyInput").value.trim();
 
-// 2) OPENAI
-function sendOpenAiRequest(userInput, model) {
-  const url = "https://api.openai.com/v1/chat/completions";
-  fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openAiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: model, // e.g. "gpt-3.5-turbo", "gpt-4"
-      messages: [{ role: "user", content: userInput }],
-      temperature: 0.7,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const text = data.choices?.[0]?.message?.content || "No response";
-      appendMessage("assistant", text, "openai");
-    })
-    .catch((error) => {
-      appendMessage("assistant", `Error: ${error.message}`, "openai");
-    });
-}
+      localStorage.setItem("geminiApiKey", geminiApiKey);
+      localStorage.setItem("openAiApiKey", openAiApiKey);
+      localStorage.setItem("grokApiKey", grokApiKey);
 
-// 3) GROK
-function sendGrokRequest(userInput, model) {
-  const url = "https://api.x.ai/v1/chat/completions";
-  fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${grokApiKey}`,
-    },
-    body: JSON.stringify({
-      messages: [{ role: "user", content: userInput }],
-      model: model, // e.g. "grok-beta"
-      temperature: 0.7,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      const text = data.choices?.[0]?.message?.content || "No response";
-      appendMessage("assistant", text, "grok");
-    })
-    .catch((error) => {
-      appendMessage("assistant", `Error: ${error.message}`, "grok");
-    });
-}
-</script>
+      // Build arrays of selected models
+      selectedGeminiModels = [];
+      if (document.getElementById("geminiModel_1").checked) {
+        selectedGeminiModels.push("gemini-1.5-flash");
+      }
+      if (document.getElementById("geminiModel_2").checked) {
+        selectedGeminiModels.push("gemini-2.0-flash");
+      }
+      localStorage.setItem("selectedGeminiModels", JSON.stringify(selectedGeminiModels));
+
+      selectedOpenAiModels = [];
+      if (document.getElementById("openAiModel_gpt35").checked) {
+        selectedOpenAiModels.push("gpt-3.5-turbo");
+      }
+      if (document.getElementById("openAiModel_gpt4").checked) {
+        selectedOpenAiModels.push("gpt-4");
+      }
+      if (document.getElementById("openAiModel_gpt432k").checked) {
+        selectedOpenAiModels.push("gpt-4-32k");
+      }
+      localStorage.setItem("selectedOpenAiModels", JSON.stringify(selectedOpenAiModels));
+
+      selectedGrokModels = [];
+      if (document.getElementById("grokModel_beta").checked) {
+        selectedGrokModels.push("grok-beta");
+      }
+      if (document.getElementById("grokModel_latest").checked) {
+        selectedGrokModels.push("grok-latest");
+      }
+      localStorage.setItem("selectedGrokModels", JSON.stringify(selectedGrokModels));
+
+      // Notify user
+      document.getElementById("apiKeyStatus").innerText = "Settings saved!";
+      setTimeout(() => {
+        document.getElementById("apiKeyStatus").innerText = "";
+      }, 1500);
+      toggleSidebar();
+    }
+
+    /* -----------------------------------
+       Toggle Password Visibility
+    ----------------------------------- */
+    function toggleVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      input.type = (input.type === "password") ? "text" : "password";
+    }
+
+    /* -----------------------------------
+       Input + Chat Handling
+    ----------------------------------- */
+    function handleSubmit(event) {
+      event.preventDefault();
+      sendMessage();
+    }
+
+    function handleKeyPress(event) {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+
+    // Auto-expand textarea
+    function autoGrow(textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+
+    // Send message
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      // Display user message
+      addMessageToDOM(userMessage, "user");
+
+      // Clear input
+      input.value = "";
+      autoGrow(input);
+
+      // If keys + models are selected, fetch from each
+      // 1) Gemini
+      if (geminiApiKey && selectedGeminiModels.length > 0) {
+        selectedGeminiModels.forEach((model) => sendGeminiRequest(userMessage, model));
+      }
+      // 2) OpenAI
+      if (openAiApiKey && selectedOpenAiModels.length > 0) {
+        selectedOpenAiModels.forEach((model) => sendOpenAiRequest(userMessage, model));
+      }
+      // 3) Grok
+      if (grokApiKey && selectedGrokModels.length > 0) {
+        selectedGrokModels.forEach((model) => sendGrokRequest(userMessage, model));
+      }
+    }
+
+    /* -----------------------------------
+       DOM: Add Messages
+    ----------------------------------- */
+    function addMessageToDOM(text, role, vendorClass = "") {
+      const chatArea = document.getElementById("chatArea");
+
+      const container = document.createElement("div");
+      container.classList.add("message-container");
+
+      const msgDiv = document.createElement("div");
+      msgDiv.classList.add("message");
+      if (role === "user") {
+        msgDiv.classList.add("user-message");
+      } else {
+        msgDiv.classList.add("assistant-message");
+        if (vendorClass) {
+          msgDiv.classList.add(vendorClass + "Response"); 
+        }
+
+        // Copy button
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "copy-btn";
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        copyBtn.onclick = () => copyToClipboard(text);
+        msgDiv.appendChild(copyBtn);
+      }
+      msgDiv.textContent = text;
+
+      container.appendChild(msgDiv);
+      chatArea.appendChild(container);
+      container.scrollIntoView({ behavior: "smooth" });
+    }
+
+    /* -----------------------------------
+       Toast + Copy
+    ----------------------------------- */
+    function showToast() {
+      const toast = document.getElementById("toast");
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 2000);
+    }
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => showToast());
+    }
+
+    /* -----------------------------------
+       API Requests
+    ----------------------------------- */
+    // 1) Gemini
+    function sendGeminiRequest(userInput, model) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            { parts: [{ text: userInput }] }
+          ]
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+        addMessageToDOM(text, "assistant", "gemini");
+      })
+      .catch(err => {
+        addMessageToDOM("Gemini Error: " + err.message, "assistant", "gemini");
+      });
+    }
+
+    // 2) OpenAI
+    function sendOpenAiRequest(userInput, model) {
+      const url = "https://api.openai.com/v1/chat/completions";
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${openAiApiKey}`,
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [{ role: "user", content: userInput }],
+          temperature: 0.7,
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        const text = data.choices?.[0]?.message?.content || "No response";
+        addMessageToDOM(text, "assistant", "openai");
+      })
+      .catch(err => {
+        addMessageToDOM("OpenAI Error: " + err.message, "assistant", "openai");
+      });
+    }
+
+    // 3) Grok
+    function sendGrokRequest(userInput, model) {
+      const url = "https://api.x.ai/v1/chat/completions";
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${grokApiKey}`,
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: userInput }],
+          model: model,
+          temperature: 0.7,
+        }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        const text = data.choices?.[0]?.message?.content || "No response";
+        addMessageToDOM(text, "assistant", "grok");
+      })
+      .catch(err => {
+        addMessageToDOM("Grok Error: " + err.message, "assistant", "grok");
+      });
+    }
+  </script>
 </body>
 </html>
