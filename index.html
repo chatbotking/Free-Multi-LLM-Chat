@@ -23,7 +23,7 @@
       --bg-secondary: #f5f5f5;
       --text-primary: #333333;
       --border: #e5e5e5;
-      --accent: #36D6B5;    /* Your brand color */
+      --accent: #36D6B5; /* Brand color */
       --accent-hover: #2eb9a3;
       --error: #dc2626;
     }
@@ -119,7 +119,6 @@
       transition: left 0.3s;
       z-index: 10;
       border-right: 1px solid var(--border);
-
       /* Only allow vertical scrolling, no horizontal */
       overflow-y: auto;
       overflow-x: hidden;
@@ -138,6 +137,15 @@
       border: none;
       color: var(--text-primary);
       font-size: 1rem;
+      cursor: pointer;
+    }
+    .logo-container {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .logo-container img {
+      max-width: 200px;
+      height: auto;
       cursor: pointer;
     }
     .sidebar label {
@@ -186,15 +194,11 @@
     .sidebar .save-btn:hover {
       background: var(--accent-hover);
     }
-    .modelList {
-      margin: 0.5rem 0 1rem 0;
-      font-size: 0.95rem;
-    }
-    /* Subtle branding at bottom of sidebar */
     .sidebar-footer {
       margin-top: 2rem;
       font-size: 0.85rem;
       opacity: 0.7;
+      text-align: center;
     }
     .sidebar-footer a {
       color: var(--text-primary);
@@ -241,10 +245,25 @@
         transform: translateY(0);
       }
     }
-    .message-header {
+    .assistant-meta {
       font-size: 0.8rem;
       opacity: 0.6;
-      margin-bottom: 2px;
+      margin-top: 2px;
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .assistant-meta button {
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.3s;
+    }
+    .assistant-meta button:hover {
+      opacity: 1;
     }
     .user-message {
       background: var(--accent);
@@ -252,6 +271,7 @@
     }
     .assistant-message {
       background: var(--bg-secondary);
+      margin-bottom: 0.25rem;
     }
 
     /* Distinguish each vendor with left border or color accent */
@@ -266,24 +286,6 @@
     .grokResponse {
       border-left: 5px solid #7b2e90; /* example color for Grok */
       padding-left: 0.75rem;
-    }
-
-    .copy-btn {
-      position: absolute;
-      right: 8px;
-      bottom: 8px;
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.3s;
-    }
-    .user-message .copy-btn {
-      color: #fff;
-    }
-    .copy-btn:hover {
-      opacity: 1;
     }
 
     /* -----------------------------------
@@ -375,6 +377,16 @@
         <button class="close-btn" onclick="toggleSidebar()">X</button>
       </div>
 
+      <!-- Small brand logo at the top -->
+      <div class="logo-container">
+        <a href="https://www.ChatbotBuilder.ai" target="_blank">
+          <img 
+            src="https://i.ibb.co/p2ysPbT/CBB-Logo-CBB-Green.png"
+            alt="Chatbot Builder AI"
+          />
+        </a>
+      </div>
+
       <!-- Gemini API Key -->
       <label for="geminiApiKeyInput">Gemini API Key:</label>
       <div class="api-key-section">
@@ -404,25 +416,26 @@
       <!-- Model Selections -->
       <h3>Select Models</h3>
 
-      <label for="geminiModels">Gemini:</label>
-      <select id="geminiModels" multiple class="modelList" size="2">
-        <!-- Removing gemini-2.0-flash => Replacing with gemini-2.0-flash-exp -->
+      <label for="geminiModel">Gemini:</label>
+      <select id="geminiModel">
+        <option value="none">None</option>
         <option value="gemini-1.5-flash">gemini-1.5-flash</option>
         <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
       </select>
 
-      <label for="openAiModels">OpenAI:</label>
-      <select id="openAiModels" multiple class="modelList" size="4">
-        <!-- The four models from your spec -->
-        <option value="GPT-4o">GPT-4o (Flagship)</option>
-        <option value="GPT-4o-mini">GPT-4o-mini (Fast)</option>
-        <option value="o1">o1 (Complex Reasoning)</option>
+      <label for="openAiModel">OpenAI:</label>
+      <select id="openAiModel">
+        <option value="none">None</option>
+        <option value="gpt-4o">GPT-4o</option>
+        <option value="gpt-4o-mini">GPT-4o-mini</option>
+        <option value="o1">o1</option>
         <option value="o1-mini">o1-mini</option>
+        <option value="o1-preview">o1-preview</option>
       </select>
 
-      <label for="grokModels">Grok:</label>
-      <select id="grokModels" multiple class="modelList" size="1">
-        <!-- Remove grok-latest, only grok-beta remains -->
+      <label for="grokModel">Grok:</label>
+      <select id="grokModel">
+        <option value="none">None</option>
         <option value="grok-beta">grok-beta</option>
       </select>
 
@@ -437,7 +450,7 @@
       <p id="apiKeyStatus"></p>
 
       <div class="sidebar-footer">
-        Brought to you FREE from
+        Brought to you FREE from<br />
         <a href="https://www.ChatbotBuilder.ai" target="_blank"
           >Chatbot Builder AI</a
         >
@@ -477,9 +490,9 @@
     let grokApiKey = "";
 
     // Model selections
-    let selectedGeminiModels = [];
-    let selectedOpenAiModels = [];
-    let selectedGrokModels = [];
+    let selectedGeminiModel = "none";
+    let selectedOpenAiModel = "none";
+    let selectedGrokModel = "none";
 
     // THEME
     const savedTheme = localStorage.getItem("theme") || "light";
@@ -497,29 +510,19 @@
       openAiApiKey = localStorage.getItem("openAiApiKey") || "";
       grokApiKey = localStorage.getItem("grokApiKey") || "";
 
-      // Set input fields
       document.getElementById("geminiApiKeyInput").value = geminiApiKey;
       document.getElementById("openAiApiKeyInput").value = openAiApiKey;
       document.getElementById("grokApiKeyInput").value = grokApiKey;
 
-      // Load stored model arrays
-      selectedGeminiModels = JSON.parse(localStorage.getItem("selectedGeminiModels") || "[]");
-      selectedOpenAiModels = JSON.parse(localStorage.getItem("selectedOpenAiModels") || "[]");
-      selectedGrokModels = JSON.parse(localStorage.getItem("selectedGrokModels") || "[]");
+      // Load selected models
+      selectedGeminiModel = localStorage.getItem("selectedGeminiModel") || "none";
+      selectedOpenAiModel = localStorage.getItem("selectedOpenAiModel") || "none";
+      selectedGrokModel = localStorage.getItem("selectedGrokModel") || "none";
 
-      // Mark multi-select options
-      markSelectedOptions("geminiModels", selectedGeminiModels);
-      markSelectedOptions("openAiModels", selectedOpenAiModels);
-      markSelectedOptions("grokModels", selectedGrokModels);
+      document.getElementById("geminiModel").value = selectedGeminiModel;
+      document.getElementById("openAiModel").value = selectedOpenAiModel;
+      document.getElementById("grokModel").value = selectedGrokModel;
     };
-
-    function markSelectedOptions(selectId, savedValues) {
-      const selectEl = document.getElementById(selectId);
-      for (let i = 0; i < selectEl.options.length; i++) {
-        const opt = selectEl.options[i];
-        opt.selected = savedValues.includes(opt.value);
-      }
-    }
 
     /* -----------------------------------
        Toggle Sidebar
@@ -552,15 +555,14 @@
       localStorage.setItem("openAiApiKey", openAiApiKey);
       localStorage.setItem("grokApiKey", grokApiKey);
 
-      // Build arrays from multi-select
-      selectedGeminiModels = getSelectedValues("geminiModels");
-      localStorage.setItem("selectedGeminiModels", JSON.stringify(selectedGeminiModels));
+      // Single dropdown selections
+      selectedGeminiModel = document.getElementById("geminiModel").value;
+      selectedOpenAiModel = document.getElementById("openAiModel").value;
+      selectedGrokModel = document.getElementById("grokModel").value;
 
-      selectedOpenAiModels = getSelectedValues("openAiModels");
-      localStorage.setItem("selectedOpenAiModels", JSON.stringify(selectedOpenAiModels));
-
-      selectedGrokModels = getSelectedValues("grokModels");
-      localStorage.setItem("selectedGrokModels", JSON.stringify(selectedGrokModels));
+      localStorage.setItem("selectedGeminiModel", selectedGeminiModel);
+      localStorage.setItem("selectedOpenAiModel", selectedOpenAiModel);
+      localStorage.setItem("selectedGrokModel", selectedGrokModel);
 
       // Notify user
       document.getElementById("apiKeyStatus").innerText = "Settings saved!";
@@ -568,17 +570,6 @@
         document.getElementById("apiKeyStatus").innerText = "";
       }, 1500);
       toggleSidebar();
-    }
-
-    function getSelectedValues(selectId) {
-      const selectEl = document.getElementById(selectId);
-      const vals = [];
-      for (let i = 0; i < selectEl.options.length; i++) {
-        if (selectEl.options[i].selected) {
-          vals.push(selectEl.options[i].value);
-        }
-      }
-      return vals;
     }
 
     /* -----------------------------------
@@ -617,45 +608,38 @@
       if (!userMessage) return;
 
       // Display user message
-      addMessageToDOM(userMessage, "user");
+      addMessageToDOM(userMessage, "user", "");
 
       // Clear input
       input.value = "";
       autoGrow(input);
 
       // Gemini
-      if (geminiApiKey && selectedGeminiModels.length > 0) {
-        selectedGeminiModels.forEach((model) => sendGeminiRequest(userMessage, model));
+      if (geminiApiKey && selectedGeminiModel !== "none") {
+        sendGeminiRequest(userMessage, selectedGeminiModel);
       }
 
       // OpenAI
-      if (openAiApiKey && selectedOpenAiModels.length > 0) {
-        selectedOpenAiModels.forEach((model) => sendOpenAiRequest(userMessage, model));
+      if (openAiApiKey && selectedOpenAiModel !== "none") {
+        sendOpenAiRequest(userMessage, selectedOpenAiModel);
       }
 
       // Grok
-      if (grokApiKey && selectedGrokModels.length > 0) {
-        selectedGrokModels.forEach((model) => sendGrokRequest(userMessage, model));
+      if (grokApiKey && selectedGrokModel !== "none") {
+        sendGrokRequest(userMessage, selectedGrokModel);
       }
     }
 
     /* -----------------------------------
-       DOM: Add Messages (with timestamps)
+       DOM: Add Messages (timestamp below)
     ----------------------------------- */
-    function addMessageToDOM(text, role, vendorClass = "") {
+    function addMessageToDOM(text, role, vendorClass) {
       const chatArea = document.getElementById("chatArea");
 
       const container = document.createElement("div");
       container.classList.add("message-container");
 
-      // Timestamp & role
-      const timestamp = new Date().toLocaleString();
-      const header = document.createElement("div");
-      header.className = "message-header";
-      header.textContent = `${role === "user" ? "User" : "Assistant"} - ${timestamp}`;
-      container.appendChild(header);
-
-      // Actual message bubble
+      // The message bubble
       const msgDiv = document.createElement("div");
       msgDiv.classList.add("message");
       if (role === "user") {
@@ -663,19 +647,38 @@
       } else {
         msgDiv.classList.add("assistant-message");
         if (vendorClass) {
-          msgDiv.classList.add(vendorClass + "Response"); 
+          msgDiv.classList.add(vendorClass + "Response");
         }
-
-        // Copy button
-        const copyBtn = document.createElement("button");
-        copyBtn.className = "copy-btn";
-        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-        copyBtn.onclick = () => copyToClipboard(text);
-        msgDiv.appendChild(copyBtn);
       }
       msgDiv.textContent = text;
-
       container.appendChild(msgDiv);
+
+      // If assistant, add timestamp and copy icon below
+      if (role === "assistant") {
+        const meta = document.createElement("div");
+        meta.classList.add("assistant-meta");
+        // Timestamp
+        const timestamp = new Date().toLocaleString();
+        const timeSpan = document.createElement("span");
+        timeSpan.textContent = `Assistant - ${timestamp}`;
+        meta.appendChild(timeSpan);
+
+        // Copy icon
+        const copyBtn = document.createElement("button");
+        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
+        copyBtn.onclick = () => copyToClipboard(text);
+        meta.appendChild(copyBtn);
+
+        container.appendChild(meta);
+      } else {
+        // For user, also show timestamp below
+        const meta = document.createElement("div");
+        meta.classList.add("assistant-meta"); // same style, just reusing
+        const timestamp = new Date().toLocaleString();
+        meta.textContent = `User - ${timestamp}`;
+        container.appendChild(meta);
+      }
+
       chatArea.appendChild(container);
       container.scrollIntoView({ behavior: "smooth" });
     }
@@ -690,7 +693,6 @@
         toast.style.display = "none";
       }, 2000);
     }
-
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => showToast());
     }
@@ -700,7 +702,6 @@
     ----------------------------------- */
     // 1) Gemini
     function sendGeminiRequest(userInput, model) {
-      // 'gemini-2.0-flash-exp' is the latest
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
       fetch(url, {
         method: "POST",
@@ -711,14 +712,13 @@
           ]
         }),
       })
-      .then(response => response.json())
-      .then(data => {
-        // Show the model name in bracket for clarity
+      .then((response) => response.json())
+      .then((data) => {
         const modelPrefix = `[Gemini - ${model}] `;
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
         addMessageToDOM(modelPrefix + text, "assistant", "gemini");
       })
-      .catch(err => {
+      .catch((err) => {
         addMessageToDOM(`[Gemini - ${model}] Error: ${err.message}`, "assistant", "gemini");
       });
     }
@@ -738,13 +738,13 @@
           temperature: 0.7,
         }),
       })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         const modelPrefix = `[OpenAI - ${model}] `;
         const text = data.choices?.[0]?.message?.content || "No response";
         addMessageToDOM(modelPrefix + text, "assistant", "openai");
       })
-      .catch(err => {
+      .catch((err) => {
         addMessageToDOM(`[OpenAI - ${model}] Error: ${err.message}`, "assistant", "openai");
       });
     }
@@ -764,13 +764,13 @@
           temperature: 0.7,
         }),
       })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         const modelPrefix = `[Grok - ${model}] `;
         const text = data.choices?.[0]?.message?.content || "No response";
         addMessageToDOM(modelPrefix + text, "assistant", "grok");
       })
-      .catch(err => {
+      .catch((err) => {
         addMessageToDOM(`[Grok - ${model}] Error: ${err.message}`, "assistant", "grok");
       });
     }
