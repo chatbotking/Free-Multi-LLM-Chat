@@ -136,7 +136,7 @@
       background: none;
       border: none;
       color: var(--text-primary);
-      font-size: 1rem;
+      font-size: 1.25rem;
       cursor: pointer;
     }
     .logo-container {
@@ -481,7 +481,9 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <h2>Settings</h2>
-        <button class="close-btn" onclick="toggleSidebar()">X</button>
+        <button class="close-btn" onclick="toggleSidebar()">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
 
       <!-- Small brand logo at the top -->
@@ -535,14 +537,15 @@
         <label for="geminiModel">Gemini:</label>
         <select id="geminiModel">
           <option value="none">None</option>
-          <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-          <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
+          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (gemini-2.0-flash-exp)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (gemini-1.5-flash)</option>
+          <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (gemini-1.5-flash-8b)</option>
         </select>
 
         <label for="openAiModel">OpenAI:</label>
         <select id="openAiModel">
           <option value="none">None</option>
-          <!-- As requested: ALIAS -> real model -->
+          <!-- ALIAS -> real model -->
           <option value="gpt-4o">gpt-4o (maps to gpt-4o-2024-08-06)</option>
           <option value="chatgpt-4o-latest">chatgpt-4o-latest (continuously updated)</option>
           <option value="gpt-4o-mini">gpt-4o-mini (maps to gpt-4o-mini-2024-07-18)</option>
@@ -628,7 +631,7 @@
       "o1": "o1-2024-12-17",
       "o1-mini": "o1-mini-2024-09-12",
       "o1-preview": "o1-preview-2024-09-12",
-      "chatgpt-4o-latest": "chatgpt-4o-latest" // “Continuously updated”
+      "chatgpt-4o-latest": "chatgpt-4o-latest" // continuously updated
     };
 
     // Multiple Chats
@@ -669,13 +672,12 @@
     };
 
     /* -----------------------------------
-       Sidebar
+       Sidebar + Collapsible
     ----------------------------------- */
     function toggleSidebar() {
       const sidebar = document.getElementById("sidebar");
       sidebar.classList.toggle("open");
     }
-
     function toggleCollapsible(toggleId, contentId) {
       const toggleBtn = document.getElementById(toggleId);
       const contentEl = document.getElementById(contentId);
@@ -742,7 +744,7 @@
       if (chats.length === 0) {
         createNewChat();
       } else {
-        // Always ensure currentChatId is valid
+        // Ensure currentChatId is valid
         if (!currentChatId) {
           currentChatId = chats[0].id;
         }
@@ -776,7 +778,7 @@
     }
 
     function deleteChat(chatId, e) {
-      e.stopPropagation(); // don’t switch chat
+      e.stopPropagation(); // don’t switch chat on delete
       const idx = chats.findIndex(c => c.id === chatId);
       if (idx > -1) {
         chats.splice(idx, 1);
@@ -930,7 +932,6 @@
         }
       }
 
-      // If assistant and animate
       if (role === "assistant" && animate) {
         typeText(msgDiv, text);
       } else {
@@ -966,8 +967,8 @@
       container.scrollIntoView({ behavior: "smooth" });
     }
 
-    // Typing effect for assistant messages
-    function typeText(element, text, speed = 30) {
+    // Typing effect for assistant messages (faster now)
+    function typeText(element, text, speed = 10) {
       let idx = 0;
       const intervalId = setInterval(() => {
         element.textContent += text.charAt(idx);
@@ -997,23 +998,27 @@
     ----------------------------------- */
     // 1) Gemini
     function sendGeminiRequest(userInput, model) {
-      // NOTE: This is a placeholder endpoint—replace with actual for real usage.
-      // Hypothetical endpoint & payload for demonstration:
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateText?key=${geminiApiKey}`;
+      // Format: https://generativelanguage.googleapis.com/v1beta/models/<model>:generateContent?key=<api_key>
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
       fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          prompt: {
-            text: userInput
-          }
+          contents: [
+            {
+              parts: [{ text: userInput }]
+            }
+          ]
         }),
       })
       .then((response) => response.json())
       .then((data) => {
-        const text = data?.candidates?.[0]?.output || "No response";
+        // Attempt to read the first candidate
+        // Structure can vary, so adjust as your real API's response
+        const text = data?.contents?.[0]?.parts?.[0]?.text
+          || data?.candidates?.[0]?.content?.parts?.[0]?.text
+          || "No response";
         const finalText = `[Gemini - ${model}] ${text}`;
-        // Add to DOM with typed animation
         const newMsgObj = {
           role: "assistant",
           text: finalText,
@@ -1021,13 +1026,7 @@
           timestamp: new Date().toLocaleString()
         };
         addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          finalText,
-          "assistant",
-          "gemini",
-          newMsgObj.timestamp,
-          true
-        );
+        addMessageToDOM(finalText, "assistant", "gemini", newMsgObj.timestamp, true);
       })
       .catch((err) => {
         const finalText = `[Gemini - ${model}] Error: ${err.message}`;
@@ -1038,19 +1037,13 @@
           timestamp: new Date().toLocaleString()
         };
         addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          finalText,
-          "assistant",
-          "gemini",
-          newMsgObj.timestamp,
-          false
-        );
+        addMessageToDOM(finalText, "assistant", "gemini", newMsgObj.timestamp, false);
       });
     }
 
     // 2) OpenAI
     function sendOpenAiRequest(userInput, model) {
-      // Hypothetical endpoint usage
+      // Standard OpenAI v1 chat completions endpoint
       const url = "https://api.openai.com/v1/chat/completions";
       fetch(url, {
         method: "POST",
@@ -1060,7 +1053,10 @@
         },
         body: JSON.stringify({
           model: model,
-          messages: [{ role: "user", content: userInput }],
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: userInput }
+          ],
           temperature: 0.7,
         }),
       })
@@ -1068,7 +1064,6 @@
       .then((data) => {
         const text = data?.choices?.[0]?.message?.content || "No response";
         const finalText = `[OpenAI - ${model}] ${text}`;
-        // Add to DOM with typed animation
         const newMsgObj = {
           role: "assistant",
           text: finalText,
@@ -1123,7 +1118,6 @@
       .then((data) => {
         const text = data?.choices?.[0]?.message?.content || "No response";
         const finalText = `[Grok - ${model}] ${text}`;
-        // Add to DOM with typed animation
         const newMsgObj = {
           role: "assistant",
           text: finalText,
