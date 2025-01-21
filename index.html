@@ -2,1253 +2,434 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multi-Model Chat (World-Class Edition)</title>
-
-  <!-- Minimal PWA-ish (optional) -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- FontAwesome for icons -->
-  <link
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
-    rel="stylesheet"
-  />
-
+  <!-- Prevent iPhone zoom by setting font sizes to at least 16px -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>DeepSeek Chat App</title>
   <style>
-    /* -----------------------------------
-       Root + Dark/Light Theme
-    ----------------------------------- */
-    :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f5f5f5;
-      --text-primary: #333333;
-      --border: #e5e5e5;
-      --accent: #36D6B5; /* Brand color */
-      --accent-hover: #2eb9a3;
-      --error: #dc2626;
-      --dropdown-font-size: 1rem; /* Increase dropdown text size */
-    }
-    [data-theme="dark"] {
-      --bg-primary: #1a1a1a;
-      --bg-secondary: #2d2d2d;
-      --text-primary: #ffffff;
-      --border: #404040;
-    }
-    *,
-    *::before,
-    *::after {
+    /* Modern CSS Reset */
+    *, *::before, *::after {
       box-sizing: border-box;
-    }
-    html,
-    body {
       margin: 0;
       padding: 0;
-      height: 100%;
-    }
-    body {
-      font-family: system-ui, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      transition: background-color 0.3s, color 0.3s;
-      -webkit-text-size-adjust: none; /* iOS Safari helps */
     }
 
-    /* -----------------------------------
-       Main App Layout
-    ----------------------------------- */
-    .app {
+    /* Custom Properties for Ultra Dark Theme */
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111111;
+      --bg-tertiary: #1a1a1a;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --accent-primary: #1a1a1a;
+      --accent-hover: #252525;
+      --border-color: #2a2a2a;
+      --message-user: #1a1a1a;
+      --message-bot: #222222;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: env(safe-area-inset);
+      /* Removed overflow: hidden to allow dynamic content adjustment */
+    }
+
+    /* Main Layout */
+    .app-container {
       display: flex;
       flex-direction: column;
+      width: 100%;
+      max-width: 768px;
       height: 100%;
+      background-color: var(--bg-secondary);
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      overflow: hidden;
     }
 
-    /* -----------------------------------
-       Header
-    ----------------------------------- */
-    .header {
+    /* Header Styles */
+    .chat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background-color: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
       flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1rem;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-    }
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .menu-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0.5rem;
-    }
-    .menu-btn span {
-      display: block;
-      width: 20px;
-      height: 2px;
-      background: var(--text-primary);
-      margin: 4px 0;
-    }
-    .header-actions button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      margin-left: 0.5rem;
-      padding: 0.5rem 0.8rem;
-      border-radius: 4px;
-      transition: background 0.2s;
-    }
-    .header-actions button:hover {
-      background: var(--accent-hover);
+      height: 60px;
     }
 
-    /* -----------------------------------
-       Sidebar (Hamburger Menu)
-    ----------------------------------- */
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: -350px; /* hidden off-screen by default */
-      width: 350px;
-      height: 100%;
-      background: var(--bg-secondary);
-      padding: 1.5rem;
-      transition: left 0.3s;
-      z-index: 10;
-      border-right: 1px solid var(--border);
-      /* Only allow vertical scrolling, no horizontal */
-      overflow-y: auto;
-      overflow-x: hidden;
-    }
-    .sidebar.open {
-      left: 0;
-    }
-    .sidebar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      font-size: 1.25rem;
-      cursor: pointer;
-    }
     .logo-container {
-      text-align: center;
-      margin-bottom: 1rem;
+      height: 30px;
+      display: flex;
+      align-items: center;
     }
+
     .logo-container img {
-      max-width: 200px;
-      height: auto;
-      cursor: pointer;
+      height: 100%;
+      width: auto;
+      object-fit: contain;
     }
 
-    /* -----------------------------------
-       Collapsible Sections
-    ----------------------------------- */
-    .collapsible {
-      background: none;
-      border: none;
-      width: 100%;
-      text-align: left;
-      padding: 0.5rem 0;
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      color: var(--text-primary);
-      margin-top: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .collapsible i {
-      transition: transform 0.3s;
-    }
-    .collapsible.open i {
-      transform: rotate(180deg);
-    }
-    .content {
-      display: none;
-      margin-left: 0.5rem;
-      margin-top: 0.25rem;
-    }
-    .content.show {
-      display: block;
-    }
-
-    .sidebar label {
-      display: block;
-      margin-top: 1rem;
-      font-weight: 600;
-    }
-    .sidebar .api-key-section {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-      align-items: center;
-    }
-    .sidebar .api-key-section input {
-      flex: 1;
-    }
-    .sidebar .api-key-section button {
-      padding: 0.3rem 0.6rem;
-    }
-    .sidebar a.get-key {
-      font-size: 0.8rem;
-      text-decoration: none;
-      color: var(--text-primary);
-      opacity: 0.7;
-      margin-top: -0.5rem;
-      display: inline-block;
-    }
-    .sidebar a.get-key:hover {
-      opacity: 1;
-    }
-
-    .sidebar input,
-    .sidebar select {
-      width: 100%;
-      margin-top: 0.25rem;
+    .chat-header select {
       padding: 0.5rem;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: var(--bg-primary);
+      background-color: var(--bg-secondary);
       color: var(--text-primary);
-      font-size: var(--dropdown-font-size);
-    }
-    .sidebar .save-btn {
-      margin-top: 1rem;
-      background: var(--accent);
-      border: none;
-      color: white;
-      padding: 0.6rem 1rem;
-      border-radius: 4px;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      outline: none;
       cursor: pointer;
-    }
-    .sidebar .save-btn:hover {
-      background: var(--accent-hover);
-    }
-    .sidebar-footer {
-      margin-top: 2rem;
-      font-size: 0.85rem;
-      opacity: 0.7;
-      text-align: center;
-    }
-    .sidebar-footer a {
-      color: var(--text-primary);
-      text-decoration: none;
-      border-bottom: 1px dashed var(--text-primary);
-    }
-    .sidebar-footer a:hover {
-      opacity: 1;
+      font-size: 1rem; /* 16px */
     }
 
-    #apiKeyStatus {
-      color: var(--accent);
-      margin-top: 0.5rem;
-      text-align: center;
+    .chat-header select option {
+      font-size: 1rem; /* 16px */
     }
 
-    /* -----------------------------------
-       Chat Sessions
-    ----------------------------------- */
-    .chat-sessions-container {
-      margin-top: 1rem;
-    }
-    .chat-sessions-container .chat-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    .chat-sessions-container li {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: var(--bg-primary);
-      margin-bottom: 0.5rem;
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .chat-sessions-container li:hover {
-      background: var(--border);
-    }
-    .chat-sessions-container li .del-btn {
-      background: none;
-      border: none;
-      color: var(--error);
-      font-size: 0.9rem;
-      cursor: pointer;
-      margin-left: 0.5rem;
-    }
-    .new-chat-btn {
-      background: var(--accent);
-      border: none;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 1rem;
-      width: 100%;
-      text-align: center;
-    }
-    .new-chat-btn:hover {
-      background: var(--accent-hover);
-    }
-
-    /* -----------------------------------
-       Chat Area
-    ----------------------------------- */
-    .chat-area {
+    /* Messages Area */
+    .chat-messages {
       flex: 1;
       overflow-y: auto;
       padding: 1rem;
+      background-color: var(--bg-secondary);
+    }
+
+    .message-row {
+      margin-bottom: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
-    }
-    .message-container {
-      width: 100%;
-      margin-bottom: 0.5rem;
-    }
-    .message {
-      padding: 1rem;
-      border-radius: 8px;
-      position: relative;
-      animation: fadeInUp 0.4s ease-in-out;
-      white-space: pre-wrap; /* allow multiline */
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.4;
-    }
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    .assistant-meta {
-      font-size: 0.8rem;
-      opacity: 0.6;
-      margin-top: 2px;
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-      justify-content: flex-start;
-    }
-    .assistant-meta button {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.3s;
-    }
-    .assistant-meta button:hover {
-      opacity: 1;
-    }
-    .user-message {
-      background: var(--accent);
-      color: #fff;
-    }
-    .assistant-message {
-      background: var(--bg-secondary);
-      margin-bottom: 0.25rem;
     }
 
-    /* Distinguish each vendor with left border or color accent */
-    .geminiResponse {
-      border-left: 5px solid gold; /* example color for Gemini */
-      padding-left: 0.75rem;
-    }
-    .openaiResponse {
-      border-left: 5px solid #0066cc; /* example color for OpenAI */
-      padding-left: 0.75rem;
-    }
-    .grokResponse {
-      border-left: 5px solid #7b2e90; /* example color for Grok */
-      padding-left: 0.75rem;
+    .message-row.user {
+      align-items: flex-end;
     }
 
-    /* -----------------------------------
-       Input Area (sticky bottom)
-    ----------------------------------- */
-    .input-area {
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
-      padding: 0.5rem;
-      flex-shrink: 0;
-      position: sticky;
-      bottom: 0;
-    }
-    .input-form {
-      display: flex;
-      gap: 0.5rem;
+    .message-row.bot {
       align-items: flex-start;
     }
-    .input-form textarea {
+
+    .message-bubble {
+      max-width: 80%;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      font-size: 1rem; /* 16px */
+      word-wrap: break-word;
+      position: relative;
+    }
+
+    .message-row.user .message-bubble {
+      background-color: var(--message-user);
+      color: white;
+      border-bottom-right-radius: 0.25rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .message-row.bot .message-bubble {
+      background-color: var(--message-bot);
+      color: var(--text-primary);
+      border-bottom-left-radius: 0.25rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .message-timestamp {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    /* Input Area - Sticky at bottom using Flexbox */
+    .chat-input {
+      display: flex;
+      gap: 0.75rem;
+      padding: 1rem;
+      padding-bottom: 1.5rem; /* Added extra padding at the bottom */
+      background-color: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+
+    .chat-input textarea {
       flex: 1;
       padding: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      resize: none;
-      background: var(--bg-primary);
+      background-color: var(--bg-secondary);
       color: var(--text-primary);
-      min-height: 40px;
-      max-height: 200px;
-      font-size: 16px;
-      overflow-y: auto;
-    }
-    .send-btn {
-      padding: 0.75rem 1.2rem;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      flex-shrink: 0;
-    }
-    .send-btn:hover {
-      background: var(--accent-hover);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      resize: none;
+      outline: none;
+      font-size: 1rem; /* 16px */
+      line-height: 1.5;
+      min-height: 2.5rem;
+      max-height: 10rem;
     }
 
-    /* -----------------------------------
-       Footer (below input)
-    ----------------------------------- */
-    .footer {
-      text-align: center;
-      font-size: 0.85rem;
-      padding: 0.5rem;
-      background: var(--bg-secondary);
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .footer a {
-      color: var(--accent);
-      text-decoration: none;
-      border-bottom: 1px dashed var(--accent);
+    .chat-input textarea::placeholder {
+      color: var(--text-secondary);
     }
 
-    /* Toast notification */
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 1rem;
-      background: var(--accent);
+    .chat-input button {
+      padding: 0.75rem 1.5rem;
+      background-color: var(--accent-primary);
       color: white;
-      border-radius: 4px;
-      display: none;
-      animation: slideIn 0.3s ease-out;
-      z-index: 999;
-    }
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-      }
-      to {
-        transform: translateX(0);
-      }
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 1rem; /* 16px */
+      transition: background-color 0.2s;
+      white-space: nowrap;
     }
 
-    /* -----------------------------------
-       Nicer Toggle Switch for Dark Mode
-    ----------------------------------- */
-    .theme-switch-container {
-      margin-top: 1.5rem;
+    .chat-input button:hover {
+      background-color: var(--accent-hover);
+    }
+
+    /* Scrollbar Styling */
+    .chat-messages::-webkit-scrollbar {
+      width: 0.5rem;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: var(--border-color);
+      border-radius: 0.25rem;
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
-      font-weight: 600;
-      justify-content: center; /* center horizontally */
+      gap: 0.3rem;
+      margin-top: 0.5rem;
     }
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 46px;
-      height: 24px;
-    }
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #ccc;
-      transition: .4s;
-      border-radius: 24px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      bottom: 3px;
-      background-color: white;
-      transition: .4s;
+
+    .typing-indicator .dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--text-secondary);
       border-radius: 50%;
+      animation: blink 1.4s infinite both;
     }
-    input:checked + .slider {
-      background-color: var(--accent);
+
+    .typing-indicator .dot:nth-child(1) {
+      animation-delay: 0s;
     }
-    input:checked + .slider:before {
-      transform: translateX(22px);
+
+    .typing-indicator .dot:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .typing-indicator .dot:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes blink {
+      0% {
+        opacity: 0.2;
+      }
+      20% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0.2;
+      }
+    }
+
+    /* Mobile Optimization */
+    @media (max-width: 768px) {
+      .app-container {
+        border-radius: 0;
+      }
+
+      .message-bubble {
+        max-width: 85%;
+      }
+
+      .chat-input {
+        padding: 0.75rem;
+        padding-bottom: calc(env(safe-area-inset-bottom) + 1rem); /* Ensure padding accounts for safe area */
+      }
+
+      .chat-header select {
+        font-size: 1rem; /* 16px */
+        padding: 0.5rem;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="app">
-    <!-- HEADER -->
-    <header class="header">
-      <div class="header-left">
-        <button class="menu-btn" onclick="toggleSidebar()">
-          <span></span>
-          <span></span>
-          <span></span>
-        </button>
-        <h1>Multi-Model Chat</h1>
-      </div>
-      <div class="header-actions">
-        <!-- Additional header buttons if needed -->
-      </div>
-    </header>
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <h2>Settings</h2>
-        <button class="close-btn" onclick="toggleSidebar()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <!-- Small brand logo at the top -->
-      <div class="logo-container">
-        <a href="https://www.ChatbotBuilder.ai" target="_blank">
-          <img 
-            src="https://i.ibb.co/p2ysPbT/CBB-Logo-CBB-Green.png"
-            alt="Chatbot Builder AI"
-          />
-        </a>
-      </div>
-
-      <!-- Collapsible: APIs -->
-      <button class="collapsible" id="apisToggle" onclick="toggleCollapsible('apisToggle', 'apisContent')">
-        APIs 
-        <i class="fas fa-chevron-down"></i>
-      </button>
-      <div class="content" id="apisContent">
-        <!-- Gemini API Key -->
-        <label for="geminiApiKeyInput">Gemini API Key:</label>
-        <div class="api-key-section">
-          <input type="password" id="geminiApiKeyInput" />
-          <button onclick="toggleVisibility('geminiApiKeyInput')">Show</button>
-        </div>
-        <a class="get-key" href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank">Get API Key</a>
-
-        <!-- OpenAI API Key -->
-        <label for="openAiApiKeyInput">OpenAI API Key:</label>
-        <div class="api-key-section">
-          <input type="password" id="openAiApiKeyInput" />
-          <button onclick="toggleVisibility('openAiApiKeyInput')">Show</button>
-        </div>
-        <a class="get-key" href="https://platform.openai.com" target="_blank">Get API Key</a>
-
-        <!-- Grok API Key -->
-        <label for="grokApiKeyInput">Grok API Key:</label>
-        <div class="api-key-section">
-          <input type="password" id="grokApiKeyInput" />
-          <button onclick="toggleVisibility('grokApiKeyInput')">Show</button>
-        </div>
-        <a class="get-key" href="https://docs.x.ai/docs/overview" target="_blank">Get API Key</a>
-      </div>
-
-      <!-- Collapsible: Models -->
-      <button class="collapsible" id="modelsToggle" onclick="toggleCollapsible('modelsToggle', 'modelsContent')">
-        Models 
-        <i class="fas fa-chevron-down"></i>
-      </button>
-      <div class="content" id="modelsContent">
-        <h3>Select Models</h3>
-        <label for="geminiModel">Gemini:</label>
-        <select id="geminiModel">
-          <option value="none">None</option>
-          <option value="gemini-2.0-flash-exp">Gemini 2.0 Flash (gemini-2.0-flash-exp)</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (gemini-1.5-flash)</option>
-          <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B (gemini-1.5-flash-8b)</option>
-        </select>
-
-        <label for="openAiModel">OpenAI:</label>
-        <select id="openAiModel">
-          <option value="none">None</option>
-          <!-- ALIAS -> real model -->
-          <option value="gpt-4o">gpt-4o (maps to gpt-4o-2024-08-06)</option>
-          <option value="chatgpt-4o-latest">chatgpt-4o-latest (continuously updated)</option>
-          <option value="gpt-4o-mini">gpt-4o-mini (maps to gpt-4o-mini-2024-07-18)</option>
-        </select>
-
-        <label for="grokModel">Grok:</label>
-        <select id="grokModel">
-          <option value="none">None</option>
-          <option value="grok-beta">grok-beta</option>
-        </select>
-      </div>
-
-      <hr style="margin-top: 1rem; margin-bottom: 1rem;"/>
-
-      <!-- Dark Mode Toggle (Nicer Switch) -->
-      <div class="theme-switch-container">
-        <span>Dark Mode</span>
-        <label class="switch">
-          <input type="checkbox" id="themeSwitch" onchange="toggleTheme()" />
-          <span class="slider"></span>
-        </label>
-      </div>
-
-      <button class="save-btn" onclick="saveSettings()">Save</button>
-      <p id="apiKeyStatus"></p>
-
-      <!-- Chat Sessions -->
-      <div class="chat-sessions-container">
-        <h3>Chats</h3>
-        <ul class="chat-list" id="chatList"></ul>
-        <button class="new-chat-btn" onclick="createNewChat()">+ New Chat</button>
-      </div>
-
-      <div class="sidebar-footer">
-        Brought to you FREE from<br />
-        <a href="https://www.ChatbotBuilder.ai" target="_blank"
-          >Chatbot Builder AI</a
-        >
-      </div>
-    </aside>
-
-    <!-- MAIN CHAT AREA -->
-    <main class="chat-area" id="chatArea"></main>
-
-    <!-- INPUT AREA -->
-    <div class="input-area">
-      <form class="input-form" onsubmit="handleSubmit(event)">
-        <textarea
-          id="messageInput"
-          placeholder="Type your message..."
-          rows="1"
-          onkeydown="handleKeyPress(event)"
-          oninput="autoGrow(this)"
-        ></textarea>
-        <button type="submit" class="send-btn">
-          <i class="fas fa-paper-plane"></i>
-        </button>
-      </form>
+<div class="app-container">
+  <div class="chat-header">
+    <div class="logo-container">
+      <img src="https://i.ibb.co/p2ysPbT/CBB-Logo-CBB-Green.png" alt="DeepSeek Logo"/>
     </div>
-
-    <!-- FOOTER -->
-    <div class="footer">
-      Brought to you by 
-      <a href="https://www.ChatbotBuilder.ai" target="_blank">Chatbot Builder AI</a>
-    </div>
+    <select id="model-select">
+      <option value="deepseek-chat">DeepSeek Chat (V3)</option>
+      <option value="deepseek-reasoner">DeepSeek Reasoner (R1)</option>
+    </select>
   </div>
 
-  <!-- TOAST -->
-  <div class="toast" id="toast">Copied to clipboard!</div>
+  <div class="chat-messages" id="chat-messages"></div>
 
-  <script>
-    /* -----------------------------------
-       Global State
-    ----------------------------------- */
-    let isProcessing = false;
+  <div class="chat-input">
+    <textarea 
+      id="user-input" 
+      placeholder="Type your message here..."
+      rows="1"
+    ></textarea>
+    <button id="send-btn">Send</button>
+  </div>
+</div>
 
-    // API Keys
-    let geminiApiKey = "";
-    let openAiApiKey = "";
-    let grokApiKey = "";
+<script>
+  // DOM Elements
+  const chatMessages = document.getElementById('chat-messages');
+  const userInput = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
+  const modelSelect = document.getElementById('model-select');
 
-    // Model selections
-    let selectedGeminiModel = "none";
-    let selectedOpenAiModel = "none";
-    let selectedGrokModel = "none";
+  // State
+  let conversation = [
+    { role: "system", content: "You are a helpful assistant." }
+  ];
+  let isTyping = false;
 
-    // Known OpenAI model name mappings
-    const openAiModelMap = {
-      "gpt-4o": "gpt-4o-2024-08-06",
-      "gpt-4o-mini": "gpt-4o-mini-2024-07-18",
-      "chatgpt-4o-latest": "chatgpt-4o-latest"
-    };
+  // Auto-resize textarea
+  userInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 160) + 'px';
+  });
 
-    // Multiple Chats
-    let chats = []; // Array of { id, name, messages: [{role, text, vendor, timestamp, modelUsed}] }
-    let currentChatId = null;
+  // Handle Send button click
+  sendBtn.addEventListener('click', sendMessage);
 
-    // THEME
-    const savedTheme = localStorage.getItem("theme") || "light";
-    document.documentElement.setAttribute("data-theme", savedTheme);
-    window.addEventListener("DOMContentLoaded", () => {
-      const isDark = (savedTheme === "dark");
-      const themeSwitch = document.getElementById("themeSwitch");
-      if (themeSwitch) {
-        themeSwitch.checked = isDark;
-      }
-    });
-
-    /* -----------------------------------
-       On Load
-    ----------------------------------- */
-    window.onload = function() {
-      // Load keys
-      geminiApiKey = localStorage.getItem("geminiApiKey") || "";
-      openAiApiKey = localStorage.getItem("openAiApiKey") || "";
-      grokApiKey = localStorage.getItem("grokApiKey") || "";
-
-      document.getElementById("geminiApiKeyInput").value = geminiApiKey;
-      document.getElementById("openAiApiKeyInput").value = openAiApiKey;
-      document.getElementById("grokApiKeyInput").value = grokApiKey;
-
-      // Load selected models
-      selectedGeminiModel = localStorage.getItem("selectedGeminiModel") || "none";
-      selectedOpenAiModel = localStorage.getItem("selectedOpenAiModel") || "none";
-      selectedGrokModel = localStorage.getItem("selectedGrokModel") || "none";
-
-      document.getElementById("geminiModel").value = selectedGeminiModel;
-      document.getElementById("openAiModel").value = selectedOpenAiModel;
-      document.getElementById("grokModel").value = selectedGrokModel;
-
-      // Load chat sessions
-      loadChatsFromStorage();
-    };
-
-    /* -----------------------------------
-       Sidebar + Collapsible
-    ----------------------------------- */
-    function toggleSidebar() {
-      const sidebar = document.getElementById("sidebar");
-      sidebar.classList.toggle("open");
-    }
-    function toggleCollapsible(toggleId, contentId) {
-      const toggleBtn = document.getElementById(toggleId);
-      const contentEl = document.getElementById(contentId);
-
-      toggleBtn.classList.toggle("open");
-      contentEl.classList.toggle("show");
-    }
-
-    /* -----------------------------------
-       Theme Toggle
-    ----------------------------------- */
-    function toggleTheme() {
-      const currentTheme = document.documentElement.getAttribute("data-theme");
-      const newTheme = (currentTheme === "dark") ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", newTheme);
-      localStorage.setItem("theme", newTheme);
-    }
-
-    /* -----------------------------------
-       Save Settings
-    ----------------------------------- */
-    function saveSettings() {
-      // Grab user input
-      geminiApiKey = document.getElementById("geminiApiKeyInput").value.trim();
-      openAiApiKey = document.getElementById("openAiApiKeyInput").value.trim();
-      grokApiKey = document.getElementById("grokApiKeyInput").value.trim();
-
-      localStorage.setItem("geminiApiKey", geminiApiKey);
-      localStorage.setItem("openAiApiKey", openAiApiKey);
-      localStorage.setItem("grokApiKey", grokApiKey);
-
-      // Single dropdown selections
-      selectedGeminiModel = document.getElementById("geminiModel").value;
-      selectedOpenAiModel = document.getElementById("openAiModel").value;
-      selectedGrokModel = document.getElementById("grokModel").value;
-
-      localStorage.setItem("selectedGeminiModel", selectedGeminiModel);
-      localStorage.setItem("selectedOpenAiModel", selectedOpenAiModel);
-      localStorage.setItem("selectedGrokModel", selectedGrokModel);
-
-      // Notify user
-      document.getElementById("apiKeyStatus").innerText = "Settings saved!";
-      setTimeout(() => {
-        document.getElementById("apiKeyStatus").innerText = "";
-      }, 1500);
-      toggleSidebar();
-    }
-
-    /* -----------------------------------
-       Toggle Password Visibility
-    ----------------------------------- */
-    function toggleVisibility(inputId) {
-      const input = document.getElementById(inputId);
-      input.type = (input.type === "password") ? "text" : "password";
-    }
-
-    /* -----------------------------------
-       Chat Sessions Management
-    ----------------------------------- */
-    function loadChatsFromStorage() {
-      const storedChats = localStorage.getItem("multiModelChats");
-      chats = storedChats ? JSON.parse(storedChats) : [];
-
-      // If no chats exist, create one by default
-      if (chats.length === 0) {
-        createNewChat();
-      } else {
-        // Ensure currentChatId is valid
-        if (!currentChatId) {
-          currentChatId = chats[0].id;
-        }
-      }
-      renderChatList();
-      renderChatMessages(currentChatId);
-    }
-
-    function saveChatsToStorage() {
-      localStorage.setItem("multiModelChats", JSON.stringify(chats));
-    }
-
-    function createNewChat() {
-      const newId = Date.now(); // quick unique ID
-      const newChat = {
-        id: newId,
-        name: `Chat #${chats.length + 1}`,
-        messages: []
-      };
-      chats.unshift(newChat); // add to front
-      currentChatId = newId;
-      saveChatsToStorage();
-      renderChatList();
-      renderChatMessages(currentChatId);
-    }
-
-    function switchChat(chatId) {
-      currentChatId = chatId;
-      renderChatMessages(chatId);
-      toggleSidebar(); // optional: close sidebar when switching
-    }
-
-    function deleteChat(chatId, e) {
-      e.stopPropagation(); // don’t switch chat on delete
-      const idx = chats.findIndex(c => c.id === chatId);
-      if (idx > -1) {
-        chats.splice(idx, 1);
-        saveChatsToStorage();
-        // If we deleted the current chat, switch to the first available
-        if (chatId === currentChatId) {
-          currentChatId = chats.length > 0 ? chats[0].id : null;
-        }
-        renderChatList();
-        if (currentChatId) {
-          renderChatMessages(currentChatId);
-        } else {
-          // No chats left
-          createNewChat();
-        }
-      }
-    }
-
-    function renderChatList() {
-      const chatListEl = document.getElementById("chatList");
-      chatListEl.innerHTML = "";
-      chats.forEach(chat => {
-        const li = document.createElement("li");
-        li.onclick = () => switchChat(chat.id);
-        li.textContent = chat.name;
-
-        // Delete button
-        const delBtn = document.createElement("button");
-        delBtn.classList.add("del-btn");
-        delBtn.textContent = "✕";
-        delBtn.onclick = (e) => deleteChat(chat.id, e);
-
-        li.appendChild(delBtn);
-        chatListEl.appendChild(li);
-      });
-    }
-
-    function renderChatMessages(chatId) {
-      const chatArea = document.getElementById("chatArea");
-      chatArea.innerHTML = "";
-
-      const chat = chats.find(c => c.id === chatId);
-      if (!chat) return;
-
-      chat.messages.forEach((msgObj) => {
-        addMessageToDOM(
-          msgObj.text,
-          msgObj.role,
-          msgObj.vendor,
-          msgObj.timestamp,
-          false, // do not animate on reload
-          msgObj.modelUsed
-        );
-      });
-
-      // Scroll to bottom
-      setTimeout(() => {
-        chatArea.scrollTop = chatArea.scrollHeight;
-      }, 100);
-    }
-
-    /* -----------------------------------
-       Input + Chat Handling
-    ----------------------------------- */
-    function handleSubmit(event) {
-      event.preventDefault();
+  // Handle Enter key (with Shift+Enter for newline)
+  userInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       sendMessage();
     }
+  });
 
-    function handleKeyPress(event) {
-      if (event.key === "Enter" && !event.shiftKey) {
-        event.preventDefault();
-        sendMessage();
+  function addMessageToUI(text, sender) {
+    const messageRow = document.createElement('div');
+    messageRow.className = `message-row ${sender}`;
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    
+    if (sender === 'bot') {
+      // For bot messages, start with typing indicator
+      const typingIndicator = document.createElement('div');
+      typingIndicator.className = 'typing-indicator';
+      typingIndicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+      bubble.appendChild(typingIndicator);
+    } else {
+      bubble.textContent = text;
+    }
+    
+    const timestamp = document.createElement('div');
+    timestamp.className = 'message-timestamp';
+    timestamp.textContent = new Date().toLocaleTimeString();
+    
+    messageRow.appendChild(bubble);
+    messageRow.appendChild(timestamp);
+    chatMessages.appendChild(messageRow);
+    
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function updateBotMessage(messageRow, text) {
+    const bubble = messageRow.querySelector('.message-bubble');
+    bubble.innerHTML = ''; // Clear typing indicator
+    typeMessage(bubble, text);
+  }
+
+  function typeMessage(element, text) {
+    let index = 0;
+    element.textContent = '';
+    
+    function typeNextChar() {
+      if (index < text.length) {
+        element.textContent += text[index];
+        index++;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        setTimeout(typeNextChar, 20); // Adjust speed here
       }
     }
+    
+    typeNextChar();
+  }
 
-    // Auto-expand textarea
-    function autoGrow(textarea) {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    }
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text || isTyping) return;
 
-    // Send message
-    function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const userMessage = input.value.trim();
-      if (!userMessage) return;
+    // Add user message
+    addMessageToUI(text, 'user');
+    conversation.push({ role: "user", content: text });
+    
+    // Clear input and reset height
+    userInput.value = '';
+    userInput.style.height = 'auto';
+    
+    isTyping = true;
 
-      // Add user message to current chat
-      addChatMessage(currentChatId, {
-        role: "user",
-        text: userMessage,
-        vendor: "",
-        timestamp: new Date().toLocaleString(),
-        modelUsed: ""
-      });
-      addMessageToDOM(userMessage, "user", "", new Date().toLocaleString(), false);
+    // Add bot typing indicator
+    addMessageToUI('', 'bot');
+    const botMessageRow = chatMessages.lastElementChild;
+    
+    // Prepare request to DeepSeek
+    const selectedModel = modelSelect.value;
+    const apiUrl = "https://api.deepseek.com/chat/completions";
 
-      // Clear input
-      input.value = "";
-      autoGrow(input);
+    const requestBody = {
+      model: selectedModel,
+      messages: conversation,
+      stream: false
+    };
 
-      // Fire off requests to any enabled vendors
-      if (geminiApiKey && selectedGeminiModel !== "none") {
-        sendGeminiRequest(userMessage, selectedGeminiModel);
-      }
-
-      if (openAiApiKey && selectedOpenAiModel !== "none") {
-        const mappedModel = openAiModelMap[selectedOpenAiModel] || selectedOpenAiModel;
-        sendOpenAiRequest(userMessage, mappedModel);
-      }
-
-      if (grokApiKey && selectedGrokModel !== "none") {
-        sendGrokRequest(userMessage, selectedGrokModel);
-      }
-    }
-
-    // Add to chat in memory, then persist
-    function addChatMessage(chatId, messageObj) {
-      const chat = chats.find(c => c.id === chatId);
-      if (!chat) return;
-      chat.messages.push(messageObj);
-      saveChatsToStorage();
-    }
-
-    /* -----------------------------------
-       DOM: Add Messages
-       - role = "user" or "assistant"
-       - vendorClass = "gemini", "openai", "grok" or ""
-       - animate = whether to type out
-       - modelUsed = e.g. "gpt-4o-2024-08-06"
-    ----------------------------------- */
-    function addMessageToDOM(
-      text,
-      role,
-      vendorClass,
-      timestamp,
-      animate = true,
-      modelUsed = ""
-    ) {
-      const chatArea = document.getElementById("chatArea");
-
-      const container = document.createElement("div");
-      container.classList.add("message-container");
-
-      // The message bubble
-      const msgDiv = document.createElement("div");
-      msgDiv.classList.add("message");
-      if (role === "user") {
-        msgDiv.classList.add("user-message");
-        msgDiv.textContent = text;
-      } else {
-        msgDiv.classList.add("assistant-message");
-        if (vendorClass) {
-          msgDiv.classList.add(vendorClass + "Response");
-        }
-
-        // Format: "Vendor: text"
-        const vendorDisplayName = vendorClass
-          ? vendorClass.charAt(0).toUpperCase() + vendorClass.slice(1)
-          : "Assistant";
-        const combinedText = `${vendorDisplayName}: ${text}`;
-
-        if (animate) {
-          typeText(msgDiv, combinedText);
-        } else {
-          msgDiv.textContent = combinedText;
-        }
-      }
-
-      container.appendChild(msgDiv);
-
-      // Timestamp + Copy Icon
-      const meta = document.createElement("div");
-      meta.classList.add("assistant-meta");
-
-      if (role === "assistant") {
-        let metaLine = "";
-        // If we have a modelUsed, show it next to the timestamp
-        if (modelUsed) {
-          metaLine = `[${modelUsed}] - ${timestamp}`;
-        } else {
-          metaLine = `[${timestamp}]`;
-        }
-
-        const timeSpan = document.createElement("span");
-        timeSpan.textContent = metaLine;
-        meta.appendChild(timeSpan);
-
-        // Copy icon
-        const copyBtn = document.createElement("button");
-        copyBtn.innerHTML = '<i class="fas fa-copy"></i>';
-        copyBtn.onclick = () => copyToClipboard(text);
-        meta.appendChild(copyBtn);
-      } else {
-        const userTimeSpan = document.createElement("span");
-        userTimeSpan.textContent = `User - ${timestamp}`;
-        meta.appendChild(userTimeSpan);
-      }
-
-      container.appendChild(meta);
-      chatArea.appendChild(container);
-      container.scrollIntoView({ behavior: "smooth" });
-    }
-
-    // Typing effect for assistant messages (faster now)
-    function typeText(element, text, speed = 10) {
-      let idx = 0;
-      element.textContent = ""; // ensure empty before starting
-      const intervalId = setInterval(() => {
-        element.textContent += text.charAt(idx);
-        idx++;
-        if (idx >= text.length) {
-          clearInterval(intervalId);
-        }
-      }, speed);
-    }
-
-    /* -----------------------------------
-       Toast + Copy
-    ----------------------------------- */
-    function showToast() {
-      const toast = document.getElementById("toast");
-      toast.style.display = "block";
-      setTimeout(() => {
-        toast.style.display = "none";
-      }, 2000);
-    }
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => showToast());
-    }
-
-    /* -----------------------------------
-       API Requests
-    ----------------------------------- */
-    // 1) Gemini
-    function sendGeminiRequest(userInput, model) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`;
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: userInput }]
-            }
-          ]
-        }),
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        // Attempt to read the first candidate
-        const text = data?.contents?.[0]?.parts?.[0]?.text
-          || data?.candidates?.[0]?.content?.parts?.[0]?.text
-          || "No response";
-        // Format "Gemini: text"
-        const newMsgObj = {
-          role: "assistant",
-          text,
-          vendor: "gemini",
-          timestamp: new Date().toLocaleString(),
-          modelUsed: model
-        };
-        addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          newMsgObj.text,
-          "assistant",
-          "gemini",
-          newMsgObj.timestamp,
-          true,
-          model
-        );
-      })
-      .catch((err) => {
-        const errMsg = `Error: ${err.message}`;
-        const newMsgObj = {
-          role: "assistant",
-          text: errMsg,
-          vendor: "gemini",
-          timestamp: new Date().toLocaleString(),
-          modelUsed: model
-        };
-        addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          newMsgObj.text,
-          "assistant",
-          "gemini",
-          newMsgObj.timestamp,
-          false,
-          model
-        );
-      });
-    }
-
-    // 2) OpenAI
-    function sendOpenAiRequest(userInput, model) {
-      const url = "https://api.openai.com/v1/chat/completions";
-      fetch(url, {
+    try {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${openAiApiKey}`,
+          "Authorization": `Bearer sk-32bd7581a22d46cd8ec69272c91c8460` // Your API key
         },
-        body: JSON.stringify({
-          model: model,
-          messages: [
-            { role: "system", content: "You are a helpful assistant." },
-            { role: "user", content: userInput }
-          ],
-          temperature: 0.7,
-        }),
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        const text = data?.choices?.[0]?.message?.content || "No response";
-
-        const newMsgObj = {
-          role: "assistant",
-          text,
-          vendor: "openai",
-          timestamp: new Date().toLocaleString(),
-          modelUsed: model
-        };
-        addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          newMsgObj.text,
-          "assistant",
-          "openai",
-          newMsgObj.timestamp,
-          true,
-          model
-        );
-      })
-      .catch((err) => {
-        const errMsg = `Error: ${err.message}`;
-        const newMsgObj = {
-          role: "assistant",
-          text: errMsg,
-          vendor: "openai",
-          timestamp: new Date().toLocaleString(),
-          modelUsed: model
-        };
-        addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          newMsgObj.text,
-          "assistant",
-          "openai",
-          newMsgObj.timestamp,
-          false,
-          model
-        );
+        body: JSON.stringify(requestBody)
       });
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} - ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const assistantText = data.choices?.[0]?.message?.content || "";
+
+      // Add assistant response to the conversation
+      conversation.push({ role: "assistant", content: assistantText });
+      updateBotMessage(botMessageRow, assistantText);
+    } catch (error) {
+      console.error('Error calling DeepSeek API:', error);
+      updateBotMessage(botMessageRow, 'Sorry, something went wrong. Please try again.');
     }
 
-    // 3) Grok
-    function sendGrokRequest(userInput, model) {
-      const url = "https://api.x.ai/v1/chat/completions";
-      fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${grokApiKey}`,
-        },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: userInput }],
-          model: model,
-          temperature: 0.7,
-        }),
-      })
-      .then((response) => response.json())
-      .then((data) => {
-        const text = data?.choices?.[0]?.message?.content || "No response";
+    isTyping = false;
+  }
+</script>
 
-        const newMsgObj = {
-          role: "assistant",
-          text,
-          vendor: "grok",
-          timestamp: new Date().toLocaleString(),
-          modelUsed: model
-        };
-        addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          newMsgObj.text,
-          "assistant",
-          "grok",
-          newMsgObj.timestamp,
-          true,
-          model
-        );
-      })
-      .catch((err) => {
-        const errMsg = `Error: ${err.message}`;
-        const newMsgObj = {
-          role: "assistant",
-          text: errMsg,
-          vendor: "grok",
-          timestamp: new Date().toLocaleString(),
-          modelUsed: model
-        };
-        addChatMessage(currentChatId, newMsgObj);
-        addMessageToDOM(
-          newMsgObj.text,
-          "assistant",
-          "grok",
-          newMsgObj.timestamp,
-          false,
-          model
-        );
-      });
-    }
-  </script>
 </body>
 </html>
