@@ -307,9 +307,6 @@
   ];
   let isTyping = false;
 
-  // Define API_KEY from environment variables
-  const API_KEY = process.env.API_KEY;
-
   // Auto-resize textarea
   userInput.addEventListener('input', function() {
     this.style.height = 'auto';
@@ -410,7 +407,7 @@
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}` // Use API_KEY from environment variables
+          "Authorization": `Bearer sk-32bd7581a22d46cd8ec69272c91c8460` // Your API key
         },
         body: JSON.stringify(requestBody)
       });
@@ -436,4 +433,3 @@
 
 </body>
 </html>
-
