@@ -294,16 +294,12 @@
   </div>
 </div>
 
-<!-- Audio Element for Typing Sound -->
-<audio id="typing-sound" src="https://www.myinstants.com/media/sounds/typewriter-click.mp3" preload="auto"></audio>
-
 <script>
   // DOM Elements
   const chatMessages = document.getElementById('chat-messages');
   const userInput = document.getElementById('user-input');
   const sendBtn = document.getElementById('send-btn');
   const modelSelect = document.getElementById('model-select');
-  const typingSound = document.getElementById('typing-sound');
 
   // State
   let conversation = [
@@ -313,19 +309,6 @@
 
   // Define API_KEY from environment variables
   const API_KEY = process.env.API_KEY;
-
-  // Function to detect iPhone users
-  function isIphone() {
-    return /iPhone/i.test(navigator.userAgent);
-  }
-
-  // Function to trigger haptic feedback
-  function triggerHaptic() {
-    if (isIphone() && navigator.vibrate) {
-      // Vibration patterns: [short vibration]
-      navigator.vibrate([50]);
-    }
-  }
 
   // Auto-resize textarea
   userInput.addEventListener('input', function() {
@@ -357,15 +340,8 @@
       typingIndicator.className = 'typing-indicator';
       typingIndicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
       bubble.appendChild(typingIndicator);
-
-      // Play typing sound
-      typingSound.currentTime = 0;
-      typingSound.play();
     } else {
       bubble.textContent = text;
-
-      // Trigger haptic feedback for user messages
-      triggerHaptic();
     }
     
     const timestamp = document.createElement('div');
@@ -383,13 +359,6 @@
     const bubble = messageRow.querySelector('.message-bubble');
     bubble.innerHTML = ''; // Clear typing indicator
     typeMessage(bubble, text);
-
-    // Stop typing sound
-    typingSound.pause();
-    typingSound.currentTime = 0;
-
-    // Trigger haptic feedback for bot messages
-    triggerHaptic();
   }
 
   function typeMessage(element, text) {
@@ -402,12 +371,6 @@
         index++;
         chatMessages.scrollTop = chatMessages.scrollHeight;
         setTimeout(typeNextChar, 20); // Adjust speed here
-
-        // Play typing sound intermittently
-        if (index % 5 === 0) { // Play sound every 5 characters
-          typingSound.currentTime = 0;
-          typingSound.play();
-        }
       }
     }
     
@@ -473,3 +436,4 @@
 
 </body>
 </html>
+
