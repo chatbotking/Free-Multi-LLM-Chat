@@ -1,9 +1,12 @@
+# Exported from Render on 2025-01-21T18:38:24Z
 services:
-  - type: web
-    name: deepseek-backend
-    env: node
-    buildCommand: npm install
-    startCommand: node server.js
-    envVars:
-      - key: API_KEY
-        sync: false
+- type: web
+  name: Free-Multi-LLM-Chat-1
+  runtime: static
+  repo: https://github.com/chatbotking/Free-Multi-LLM-Chat
+  envVars:
+  - key: API_KEY
+    sync: false
+  staticPublishPath: .
+version: "1"
+
